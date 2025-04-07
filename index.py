@@ -11,11 +11,7 @@ from generic.components import no_auth
 from bfabric_web_apps import get_logger
 from directory import DIRECTORY
 
-######################################################################################################
-####################### STEP 1: Get Data From the User! ##############################################
-######################################################################################################
-
-# Here we define the sidebar content, which includes a slider, a dropdown, an input field, and a button.
+# Here we define the sidebar content.
 sidebar = []
 
 # here we define the modal that will pop up when the user clicks the submit button.
@@ -28,11 +24,11 @@ modal = html.Div([
     is_open=False,),
 ])
 
-# Here are the alerts which will pop up when the user creates workunits 
+# Here are the alerts which will pop up when the user clicks "submit" 
 alerts = html.Div(
     [
-        dbc.Alert("Success: Report created!", color="success", id="alert-fade-success", dismissable=True, is_open=False),
-        dbc.Alert("Error: Report creation failed!", color="danger", id="alert-fade-fail", dismissable=True, is_open=False),
+        dbc.Alert("Success: Job Submitted!", color="success", id="alert-fade-success", dismissable=True, is_open=False),
+        dbc.Alert("Error: Job Submission Failed!", color="danger", id="alert-fade-fail", dismissable=True, is_open=False),
     ], style={"margin": "20px"}
 )
 
@@ -62,7 +58,7 @@ app_specific_layout = dbc.Row(
                     html.Div(id="auth-div")  # Placeholder for `auth-div` to be updated dynamically.
                 ],
                 style={
-                    "margin-top": "20vh",
+                    "margin-top": "2vh",
                     "margin-left": "2vw",
                     "font-size": "20px"
                 }
@@ -73,46 +69,57 @@ app_specific_layout = dbc.Row(
     style={"margin-top": "0px", "min-height": "40vh"}  # Overall styling for the row layout.
 )
 
-# Here we define the documentation content for the app.
-documentation_content = []
 
-app_title = "Sushi Runner"
+documentation_content = [html.Div(id="docs_container")]
+app_title = "Sushi App Runner"
 
 # here we use the get_static_layout function from bfabric_web_apps to set up the app layout.
-app.layout = bfabric_web_apps.get_static_layout(         # The function from bfabric_web_apps that sets up the app layout.
-    base_title=app_title,                          # The app title we defined previously
-    main_content=app_specific_layout,     # The main content for the app defined in components.py
-    documentation_content=documentation_content,    # Documentation content for the app defined in components.py
-    layout_config={"workunits": True, "queue": False, "bug": True}  # Configuration for the layout
+app.layout = bfabric_web_apps.get_static_layout(                        # The function from bfabric_web_apps that sets up the app layout.
+    base_title=app_title,                                               # The app title we defined previously
+    main_content=app_specific_layout,                                   # The main content for the app defined in components.py
+    documentation_content=documentation_content,                        # Documentation content for the app defined in components.py
+    layout_config={"workunits": True, "queue": False, "bug": True}      # Configuration for the layout
 )
 
 # This callback is necessary for the modal to pop up when the user clicks the submit button.
 @app.callback(
     Output("modal-confirmation", "is_open"),
-    [Input("example-button", "n_clicks"), Input("Submit", "n_clicks")],
+    [Input("submit1", "n_clicks"), Input("Submit", "n_clicks")],
     [State("modal-confirmation", "is_open")],
+    prevent_initial_call=True
 )
 def toggle_modal(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
 
-
+# This callback is for updating the user display based on the token data and entity data.
 @app.callback(
     [
         Output('auth-div', 'children'),
-        Output('sidebar', 'children')
+        Output('sidebar', 'children'),
+        Output('docs_container', 'children')
     ],
-    [Input('token_data', 'data'),
-    Input('entity', 'data')]
+    [
+        Input('token_data', 'data'),
+        Input('entity', 'data'),
+        Input('app_data', 'data')
+    ]
 )
-def update_user_display(token_data, entity_data):
+def update_user_display(token_data, entity_data, app_data):
 
-    print("Token Data:", token_data)
-    print("Entity Data:", entity_data)
+    if token_data:
 
-    if token_data and entity_data:
+        if not entity_data: 
+            layout = DIRECTORY.get("default", {})['layout']
+            sidebar = DIRECTORY.get("default", {})['sidebar']
+            return layout, sidebar, []
+
         user_name = token_data.get("user_data", "Unknown User")  
+
+        # print("ENtity data: ", entity_data)
+        # print("Token data: ", token_data)
+        # print("app data: ", app_data)
         
         L = get_logger(token_data)
         L.log_operation("User Login", f"User {user_name} logged in successfully.")
@@ -120,19 +127,17 @@ def update_user_display(token_data, entity_data):
         environment = token_data.get("environment", "").lower()
         app_id = str(token_data.get("application_data", None))
 
-        print("APP ID:", app_id)
-        print("ENVIRONMENT:", environment)
-        print("USER NAME:", user_name)
-        print("TOKEN DATA:", token_data)
-        print("ENTITY DATA:", entity_data)
-
         if environment and app_id:
 
             layout_data = DIRECTORY.get(environment, {}).get(app_id, None)
+            
+            layout = layout_data.get('layout', html.Div())
+            sidebar = layout_data.get('sidebar', html.Div())
+            docs = html.P(app_data.get('description', ""))
 
-        return layout_data.get('layout', ""), layout_data.get('sidebar', None)
+        return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs
     else:
-        return "Please log in."
+        return html.P("Please log in."), [], [] 
 
 
 # Here we run the app on the specified host and port.

@@ -60,7 +60,18 @@ def generic_process_url_and_token(url_params):
         tuple: Data for token, token metadata, entity, page title, and session details.
     """
 
-    return process_url_and_token(url_params)
+    token, token_data, entity_data, app_data, _, session_details, dynamic_link = process_url_and_token(url_params)
+
+    if None not in [token, token_data, entity_data, app_data]:
+        # If all data is available, set the page title.
+        sushi_app_title = f"{app_data.get('name', 'Unknown App: ')} -- {token_data.get('entityClass_data', 'Unknown Entity')}: {entity_data.get('name', 'Unknown Entity')}"
+
+    else:
+        # If data is missing, set a generic title.
+        sushi_app_title = "Sushi App Runner"
+        
+    # For the Sushi App Runner, we generalize the app_title: 
+    return token, token_data, entity_data, app_data, sushi_app_title, session_details, dynamic_link
 
 ## Bug Report Handling
 # ---------------------

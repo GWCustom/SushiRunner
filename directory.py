@@ -1,27 +1,27 @@
 from sushi_layouts import MergeRunDataApp
 from sushi_layouts import FastqcApp 
 from sushi_layouts import FastqScreenApp 
+from sushi_layouts import EmptyApp
 
+UNKNOWN_APP = {
+    'layout': EmptyApp.layout,
+    'sidebar': EmptyApp.sidebar
+}
 
 DIRECTORY = {
+    'default': UNKNOWN_APP,
     'test': {
         '488': {
-            'callback': MergeRunDataApp.callback,
             'layout': MergeRunDataApp.layout,
-            'sidebar': MergeRunDataApp.sidebar,
-            'title': MergeRunDataApp.title
+            'sidebar': MergeRunDataApp.sidebar
         },
         '434': {
-            'callback': FastqcApp.callback,
             'layout': FastqcApp.layout,
-            'sidebar': FastqcApp.sidebar,
-            'title': FastqcApp.title
+            'sidebar': FastqcApp.sidebar
         },
-        '489': {
-            'callback': FastqScreenApp.callback,
+        '377': {
             'layout': FastqScreenApp.layout,
-            'sidebar': FastqScreenApp.sidebar,
-            'title': FastqScreenApp.title
+            'sidebar': FastqScreenApp.sidebar
         }
     }
 }
