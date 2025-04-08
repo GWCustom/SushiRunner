@@ -25,12 +25,7 @@ modal = html.Div([
 ])
 
 # Here are the alerts which will pop up when the user clicks "submit" 
-alerts = html.Div(
-    [
-        dbc.Alert("Success: Job Submitted!", color="success", id="alert-fade-success", dismissable=True, is_open=False),
-        dbc.Alert("Error: Job Submission Failed!", color="danger", id="alert-fade-fail", dismissable=True, is_open=False),
-    ], style={"margin": "20px"}
-)
+alerts = html.Div(id="alerts")
 
 # Here we define a Dash layout, which includes the sidebar, and the main content of the app. 
 app_specific_layout = dbc.Row(
@@ -98,7 +93,8 @@ def toggle_modal(n1, n2, is_open):
     [
         Output('auth-div', 'children'),
         Output('sidebar', 'children'),
-        Output('docs_container', 'children')
+        Output('docs_container', 'children'),
+        Output('alerts', 'children')
     ],
     [
         Input('token_data', 'data'),
@@ -108,23 +104,15 @@ def toggle_modal(n1, n2, is_open):
 )
 def update_user_display(token_data, entity_data, app_data):
 
-    print("ENTITY DATA: ", entity_data)
-    print("TOKEN DATA: ", token_data)
-    print("APP DATA: ", app_data)
-
     if token_data:
 
         if not entity_data: 
             layout = DIRECTORY.get("default", {})['layout']
             sidebar = DIRECTORY.get("default", {})['sidebar']
-            return layout, sidebar, []
+            return layout, sidebar, [], []
 
         user_name = token_data.get("user_data", "Unknown User")  
 
-        # print("ENtity data: ", entity_data)
-        # print("Token data: ", token_data)
-        # print("app data: ", app_data)
-        
         L = get_logger(token_data)
         L.log_operation("User Login", f"User {user_name} logged in successfully.")
         
@@ -134,16 +122,22 @@ def update_user_display(token_data, entity_data, app_data):
         if environment and app_id:
 
             layout_data = DIRECTORY.get(environment, {}).get(app_id, None)
-            
+
+            # Extract the layout            
             layout = layout_data.get('layout', html.Div())
+
+            # Extract the sidebar
             sidebar = layout_data.get('sidebar', html.Div())
+
+            # Initialize the documentation 
             docs = html.P(app_data.get('description', ""))
 
-            layout_data.get('callbacks', lambda app: None)(app)
+            # Get the alerts:
+            alerts = layout_data.get('alerts', html.Div())
 
-        return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs
+        return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs, alerts
     else:
-        return html.P("Please log in."), [], [] 
+        return html.P("Please log in."), [], [], []
 
 
 # Here we run the app on the specified host and port.

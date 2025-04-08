@@ -10,6 +10,8 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 
 sidebar = []
 
+alerts = []
+
 layout = dbc.Container(
     [
         html.H2("Welcome to Sushi Runner."),
