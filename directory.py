@@ -13,15 +13,19 @@ DIRECTORY = {
     'test': {
         '373': {
             'layout': MergeRunDataApp.layout,
-            'sidebar': MergeRunDataApp.sidebar
+            'sidebar': MergeRunDataApp.sidebar,
+            'callbacks': MergeRunDataApp.callbacks
         },
         '434': {
             'layout': FastqcApp.layout,
-            'sidebar': FastqcApp.sidebar
+            'sidebar': FastqcApp.sidebar,
+            'callbacks': FastqcApp.callbacks
         },
         '377': {
             'layout': FastqScreenApp.layout,
-            'sidebar': FastqScreenApp.sidebar
+            'sidebar': FastqScreenApp.sidebar,
+            'callbacks': FastqScreenApp.callbacks
         }
     }
 }
+

@@ -108,6 +108,10 @@ def toggle_modal(n1, n2, is_open):
 )
 def update_user_display(token_data, entity_data, app_data):
 
+    print("ENTITY DATA: ", entity_data)
+    print("TOKEN DATA: ", token_data)
+    print("APP DATA: ", app_data)
+
     if token_data:
 
         if not entity_data: 
@@ -134,6 +138,8 @@ def update_user_display(token_data, entity_data, app_data):
             layout = layout_data.get('layout', html.Div())
             sidebar = layout_data.get('sidebar', html.Div())
             docs = html.P(app_data.get('description', ""))
+
+            layout_data.get('callbacks', lambda app: None)(app)
 
         return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs
     else:
