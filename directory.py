@@ -11,7 +11,7 @@ UNKNOWN_APP = {
 DIRECTORY = {
     'default': UNKNOWN_APP,
     'test': {
-        '488': {
+        '373': {
             'layout': MergeRunDataApp.layout,
             'sidebar': MergeRunDataApp.sidebar
         },
