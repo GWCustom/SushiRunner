@@ -3,7 +3,7 @@
 # Example: If bfabric_web_apps is version 0.1.3, bfabric_web_app_template must also be 0.1.3.
 # Verify and update versions accordingly before running the application.
 
-from dash import Input, Output, State, html, dcc
+from dash import Input, Output, State, html, dcc, ALL
 import dash_bootstrap_components as dbc
 import bfabric_web_apps
 from generic.callbacks import app
@@ -76,17 +76,20 @@ app.layout = bfabric_web_apps.get_static_layout(                        # The fu
     layout_config={"workunits": True, "queue": False, "bug": True}      # Configuration for the layout
 )
 
+
 # This callback is necessary for the modal to pop up when the user clicks the submit button.
 @app.callback(
-    Output("modal-confirmation", "is_open"),
-    [Input("submit1", "n_clicks"), Input("Submit", "n_clicks")],
+    Output("modal-confirmation", "is_open", allow_duplicate=True),
+    [Input({"type": "submit-button", "sub_id":ALL}, "n_clicks"), Input("Submit", "n_clicks")],
     [State("modal-confirmation", "is_open")],
     prevent_initial_call=True
 )
 def toggle_modal(n1, n2, is_open):
-    if n1 or n2:
+    
+    if any(n1) or n2:
         return not is_open
     return is_open
+
 
 # This callback is for updating the user display based on the token data and entity data.
 @app.callback(

@@ -4,13 +4,16 @@ from dash.dependencies import Input, Output, State
 from generic.callbacks import app
 import dash_daq as daq
 from bfabric_web_apps.utils.components import charge_switch
+from bfabric_web_apps import bfabric_interface
 import pandas as pd 
 from dash.dash_table import DataTable
 from bfabric_web_apps import (
     SCRATCH_PATH
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
+
 from sushi_utils.component_utils import submitbutton_id
+
 import os
 
 ######################################################################################################
@@ -28,7 +31,7 @@ import os
 ####################################################################################
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-title = 'FastqcApp'
+title = 'MergeRunDataApp'
 
 label_style = {
     "font-size": "0.85rem",   # Smaller text
@@ -50,6 +53,13 @@ sidebar = dbc.Container(children=charge_switch + [
         dbc.Label("Comment", style=label_style),
         dbc.Input(id=f'{title}_comment', value='', type='text', style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'})
     ]),
+    dcc.Dropdown(
+        id=f'{title}_dropdown',
+        options=[],
+        multi=False,
+        placeholder="Merge with which dataset?",
+        style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+    ),
     html.Div([
         dbc.Label("RAM", style=label_style),
         dbc.Select(id=f'{title}_ram', options=[{'label': str(x), 'value': x} for x in [15, 32, 64]], style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'})
@@ -84,21 +94,6 @@ sidebar = dbc.Container(children=charge_switch + [
         labelPosition="top",
         style={"margin-bottom": "18px"}
     ),
-    daq.BooleanSwitch(
-        id=f'{title}_showNativeReports',
-        on=False,
-        label="Show Native Reports",
-        labelPosition="top",
-        style={"margin-bottom": "18px"}
-    ),
-    html.Div([
-        dbc.Label("Special Options", style=label_style),
-        dbc.Input(id=f'{title}_specialOptions', value='', type='text', style={"margin-bottom": "18px"})
-    ]),
-    html.Div([
-        dbc.Label("Command Options", style=label_style),
-        dbc.Input(id=f'{title}_cmdOptions', value='', type='text', style={"margin-bottom": "18px"})
-    ]),
     dbc.Button("Submit", id=submitbutton_id(f'{title}_submit1'), n_clicks=0, style={"margin-top": "18px", 'borderBottom': '1px solid lightgrey'})
 ], style={"max-height":"62vh", "overflow-y":"auto", "overflow-x":"hidden"})
 
@@ -109,7 +104,8 @@ sidebar = dbc.Container(children=charge_switch + [
 layout = dbc.Container(
     children = [
         html.Div(id=id("Layout"), style={"max-height":"62vh", "overflow-y":"auto", "overflow-x":"hidden"}),
-        dcc.Store(id=id("dataset"), data={})
+        dcc.Store(id=id("dataset"), data={}),
+        dcc.Store(id=id("possible_datasets"), data={})
     ]
 )
 
@@ -120,10 +116,79 @@ alerts = html.Div(
     ],
     style={"margin": "20px"}
 )
-
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
+
+@app.callback(
+    Output(id("possible_datasets"), "data"),
+    [
+        Input("token_data", "data"),
+        Input("entity", "data"),
+    ]
+)
+def get_possible_datasets(token_data, entity_data):
+    """
+    Get, and return a list of id: name pairs for datasets which share a common container. 
+
+    Args:
+        token_data (dict): Authentication token data for secure backend communication.
+        entity_data (dict): Metadata related to the user or organization entity.
+
+    Returns:
+        dict: Dictionary containing the possible datasets.
+    """
+
+    B = bfabric_interface.get_wrapper()
+    res = B.read("dataset", {"containerid": entity_data.get("full_api_response", {}).get("container", {}).get("id", "")})
+    
+    id_name_map = { str(elt['id']): elt['name'] for elt in res }
+
+    return id_name_map
+
+
+@app.callback(
+    Output(id("dropdown"), "options"),
+    Input(id("possible_datasets"), "data"),
+    Input("entity", "data"),
+)
+def update_dropdown(possible_datasets, entity_data):
+    """
+    Update the dropdown options with the possible datasets.
+
+    This callback is triggered when the possible datasets are updated. It formats the
+    dataset names and IDs into a list of dictionaries suitable for use in a Dash dropdown.
+
+    Args:
+        possible_datasets (dict): Dictionary containing possible datasets with their IDs and names.
+        entity_data (dict): Metadata related to the user or organization entity.
+
+    Returns:
+        list: List of dictionaries containing the dataset names and IDs, with the current dataset removed.
+    """
+
+    def format_name(name): 
+        """
+        Make the name fit inside the dropdown
+        """
+        if len(name) > 25:
+            return name[:10] + "..." + name[-10:]
+        else:
+            return name
+
+    id_name_map = possible_datasets 
+    current_dataset = entity_data.get("full_api_response", {}).get("id")
+
+    options = [
+        {"label": f"{format_name(name)} ({id})", "value": id}
+        for id, name in id_name_map.items()
+        if str(id) != str(current_dataset)
+    ]
+
+    if not options: 
+        options = [{"label": "No datasets available", "value": ""}]
+
+    return options
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -230,7 +295,7 @@ def populate_default_values(entity_data, app_data):
             - process_mode (str): Default processing mode.
     """
 
-    name = entity_data.get("name", "Unknown") + "_FastQC"
+    name = entity_data.get("name", "Unknown") + "_MergeRunDataApp"
 
     return name, "", 32, 4, 50, 'employee', 'DATASET'
 
@@ -275,14 +340,12 @@ def update_dataset(entity_data, dataset):
         State(id("process_mode"), "value"),
         State(id("mail"), "value"),
         State(id("paired"), "on"),
-        State(id("showNativeReports"), "value"),
-        State(id("specialOptions"), "value"),
-        State(id("cmdOptions"), "value"),
         State(id("dataset"), "data"),
         State("datatable", "selected_rows"),
         State("token_data", "data"),
         State("entity", "data"),
-        State("app_data", "data")
+        State("app_data", "data"),
+        State("dropdown", "value")
     ],
     prevent_initial_call=True
 )
@@ -306,8 +369,8 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         mail (str): Email address for job notifications.
         paired (bool): Whether the input data is paired-end (True) or single-end (False).
         showNativeReports (bool): Whether to include native reports in output.
-        specialOptions (str): Any special options to be passed to the FastQC app.
-        cmdOptions (str): Additional command-line options for the FastQC app.
+        specialOptions (str): Any special options to be passed to the MergeRunData app.
+        cmdOptions (str): Additional command-line options for the MergeRunData app.
         dataset (list): List of dataset records displayed in the frontend.
         selected_rows (list): Indices of selected rows from the dataset table.
         token_data (dict): Authentication token data for secure backend communication.
@@ -320,7 +383,7 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
             - is_open_fail (bool): True if job submission failed, to show the failure alert.
     """
 
-    print("ASDFASDFA")
+    print("ASDFASDFAS")
 
     ### Step I. Construct the dataset.tsv file to send to the backend
     dataset = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
@@ -351,7 +414,7 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
 
     ### Step III. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
-        bundle exec sushi_fabric --class FastqcApp --dataset \
+        bundle exec sushi_fabric --class MergeRunDataApp --dataset \
         {dataset_path} --parameterset {param_path} --run  \
         --input_dataset_application {app_id} --project {project_id} \
         --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
