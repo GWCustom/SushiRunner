@@ -3,6 +3,7 @@ from sushi_layouts import FastqcApp
 from sushi_layouts import FastqScreenApp 
 from sushi_layouts import EmptyApp
 from sushi_layouts import EdgeR
+from sushi_layouts import DESeq2
 
 UNKNOWN_APP = {
     'layout': EmptyApp.layout,
@@ -26,10 +27,15 @@ DIRECTORY = {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
-        '377': {
+        '222': {
             'layout': EdgeR.layout,
             'sidebar': EdgeR.sidebar,
             'alerts': EdgeR.alerts
+        },
+        '377': {
+            'layout': DESeq2.layout,
+            'sidebar': DESeq2.sidebar,
+            'alerts': DESeq2.alerts
         }
     } 
 }
