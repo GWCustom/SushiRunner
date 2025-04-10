@@ -1,9 +1,19 @@
-from sushi_layouts import MergeRunDataApp
-from sushi_layouts import FastqcApp 
-from sushi_layouts import FastqScreenApp 
-from sushi_layouts import EmptyApp
-from sushi_layouts import EdgeR
-from sushi_layouts import DESeq2
+from sushi_layouts import (
+    MergeRunDataApp,
+    FastqcApp,
+    FastqScreenApp,
+    EmptyApp,
+    EdgeR,
+    DESeq2,
+    STAR,
+    Bowtie2,
+    CountQCApp,
+    FeatureCounts,
+    CellRanger,
+    Fastqc10xApp,
+    FastqScreen10xApp
+)
+
 
 UNKNOWN_APP = {
     'layout': EmptyApp.layout,
@@ -32,10 +42,45 @@ DIRECTORY = {
             'sidebar': EdgeR.sidebar,
             'alerts': EdgeR.alerts
         },
-        '377': {
+        '333': {
             'layout': DESeq2.layout,
             'sidebar': DESeq2.sidebar,
             'alerts': DESeq2.alerts
-        }
+        },
+        '444': {
+            'layout': STAR.layout,
+            'sidebar': STAR.sidebar,
+            'alerts': STAR.alerts
+        },
+        '555': {
+            'layout': Bowtie2.layout,
+            'sidebar': Bowtie2.sidebar,
+            'alerts': Bowtie2.alerts
+        },
+        '666': {
+            'layout': CountQCApp.layout,
+            'sidebar': CountQCApp.sidebar,
+            'alerts': CountQCApp.alerts,
+        },
+        '777': {
+            'layout': FeatureCounts.layout,
+            'sidebar': FeatureCounts.sidebar,
+            'alerts': FeatureCounts.alerts
+        },
+        '888': {
+            'layout': CellRanger.layout,
+            'sidebar': CellRanger.sidebar,
+            'alerts': CellRanger.alerts
+        },
+        '377': {
+            'layout': Fastqc10xApp.layout,
+            'sidebar': Fastqc10xApp.sidebar,
+            'alerts': Fastqc10xApp.alerts
+        },
+        '999': {
+            'layout': FastqScreen10xApp.layout,
+            'sidebar': FastqScreen10xApp.sidebar,
+            'alerts': FastqScreen10xApp.alerts
+        },
     } 
 }

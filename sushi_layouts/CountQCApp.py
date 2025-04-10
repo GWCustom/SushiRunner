@@ -29,7 +29,7 @@ import os
 ####################################################################################
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-title = 'DESeq2'
+title = 'CountQC'
 
 label_style = {
     "font-size": "0.85rem",   # Smaller text
@@ -43,14 +43,10 @@ def id(name):
 # Component styles
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-
-# DESeq2 Sidebar layout with tooltips
+# CountQC Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P(
-            "DESeq2 App Generic Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("CountQC App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -62,39 +58,26 @@ sidebar = dbc.Container(
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
 
-        html.P(
-            "DESeq2 App Specific Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("CountQC App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
             dbc.Select(
                 id=f'{title}_cores',
                 options=[{'label': str(x), 'value': x} for x in [1, 2, 4, 8]],
-                value=4,
+                value=1,
                 style=component_styles
             )
         ]),
 
         html.Div([
             dbc.Label("RAM", style=label_style),
-            dbc.Select(
-                id=f'{title}_ram',
-                options=[{'label': str(x), 'value': x} for x in [12, 24, 48]],
-                value=12,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_ram', value=4, type='number', style=component_styles)
         ]),
 
         html.Div([
             dbc.Label("Scratch", style=label_style),
-            dbc.Select(
-                id=f'{title}_scratch',
-                options=[{'label': str(x), 'value': x} for x in [10, 50, 100]],
-                value=10,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_scratch', value=10, type='number', style=component_styles)
         ]),
 
         html.Div([
@@ -123,6 +106,11 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
+            dbc.Label("Name (Label)", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_label_name', value='Count_QC', type='text', style=component_styles)
+        ]),
+
+        html.Div([
             dbc.Label("refBuild", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_refBuild', value='Homo_sapiens/GENCODE/GRC', type='text', style=component_styles)
         ]),
@@ -143,71 +131,44 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("Grouping", style={"font-size": "0.85rem"}),
+            dbc.Label("normMethod", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_grouping',
-                options=[{'label': 'condition', 'value': 'condition'}],
-                value='condition',
+                id=f'{title}_normMethod',
+                options=[{'label': 'logMean', 'value': 'logMean'}],
+                value='logMean',
                 style=component_styles
-            ),
-            dbc.Tooltip("required", target=f'{title}_grouping', placement="right")
+            )
         ]),
 
         html.Div([
-            dbc.Label("Sample Group", style={"font-size": "0.85rem"}),
+            dbc.Label("runGO", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_sampleGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Hetero',
-                style=component_styles
-            ),
-            dbc.Tooltip("required. sampleGroup should be different from refGroup", target=f'{title}_sampleGroup', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("Reference Group", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_refGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Controls',
-                style=component_styles
-            ),
-            dbc.Tooltip("required. refGroup should be different from sampleGroup", target=f'{title}_refGroup', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("Only Comparison Groups in Heatmap", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_onlyCompGroupsHeatmap',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
+                id=f'{title}_runGO',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
                 value=True,
                 style=component_styles
-            ),
-            dbc.Tooltip("Only show the samples from comparison groups in heatmap", target=f'{title}_onlyCompGroupsHeatmap', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("grouping2", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_grouping2', value='', type='text', style=component_styles),
-            dbc.Tooltip(
-                "specify the column name of your secondary co-variate (factor or numeric, assuming there is one). Ensure the column name is in the format 'NAME [Factor]' or 'NAME [Numeric]'",
-                target=f'{title}_grouping2',
-                placement="right"
             )
         ]),
 
         html.Div([
             dbc.Label("backgroundExpression", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_backgroundExpression', value=10, type='number', style=component_styles),
-            dbc.Tooltip("additive offset used in heatmaps", target=f'{title}_backgroundExpression', placement="right")
+            dbc.Tooltip("counts to be added to shrink estimated log2 ratios", target=f'{title}_backgroundExpression', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("topGeneSize", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_topGeneSize', value=100, type='number', style=component_styles)
+        ]),
+
+        html.Div([
+            dbc.Label("selectByFtest", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_selectByFtest',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=False,
+                style=component_styles
+            )
         ]),
 
         html.Div([
@@ -218,44 +179,9 @@ sidebar = dbc.Container(
                     {"label": "protein_coding", "value": "protein_coding"},
                     {"label": "long_noncoding", "value": "long_noncoding"}
                 ],
-                value="protein_coding",
+                value='protein_coding',
                 style=component_styles
             )
-        ]),
-
-        html.Div([
-            dbc.Label("runGO", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_runGO',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
-                value=True,
-                style=component_styles
-            ),
-            dbc.Tooltip("perform ORA and GSEA with Gene Ontology annotations", target=f'{title}_runGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("pValThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_pValThreshGO', value=0.01, type='number', style=component_styles),
-            dbc.Tooltip("pValue cut-off for ORA candidate gene selection", target=f'{title}_pValThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("log2RatioThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_log2RatioThreshGO', value=0, type='number', style=component_styles),
-            dbc.Tooltip("log2 FoldChange cut-off for ORA candidate gene selection", target=f'{title}_log2RatioThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshORA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshORA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in ORA", target=f'{title}_fdrThreshORA', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshGSEA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshGSEA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in GSEA", target=f'{title}_fdrThreshGSEA', placement="right")
         ]),
 
         html.Div([
@@ -269,26 +195,14 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("Mail", style={"font-size": "0.85rem"}),
+            dbc.Label("mail", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_mail', value='', type='email', style=component_styles)
-        ]),
-
-        html.Div([
-            dbc.Label("Rversion", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_Rversion',
-                options=[{"label": "Dev/R/4.4.2", "value": "Dev/R/4.4.2"}],
-                value="Dev/R/4.4.2",
-                style=component_styles
-            )
         ]),
 
         dbc.Button("Submit", id=submitbutton_id(f'{title}_submit1'), n_clicks=0, style={"margin-top": "18px", 'borderBottom': '1px solid lightgrey'})
     ],
     style={"max-height": "62vh", "overflow-y": "auto", "overflow-x": "hidden"}
 )
-
-
 
 
 ####################################################################################
@@ -315,65 +229,6 @@ alerts = html.Div(
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-import re
-from dash import html
-from dash.dependencies import Input, Output
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("sampleGroup"), "value"),
-        Input(id("refGroup"), "value"),
-        Input(id("grouping2"), "value"),
-        Input(id("backgroundExpression"), "value"),
-        Input(id("pValThreshGO"), "value"),
-        Input(id("log2RatioThreshGO"), "value"),
-        Input(id("fdrThreshORA"), "value"),
-        Input(id("fdrThreshGSEA"), "value"),
-    ]
-)
-def check_image_based_warnings(sampleGroup, refGroup, grouping2,
-                               backgroundExpression, pValThreshGO, log2RatioThreshGO,
-                               fdrThreshORA, fdrThreshGSEA):
-    warnings = []
-
-    # 1. sampleGroup and refGroup must be different
-    if sampleGroup and refGroup and sampleGroup == refGroup:
-        warnings.append("Warning: sampleGroup should be different from refGroup.")
-
-    # 2. grouping2 format: must match "NAME [Factor]" or "NAME [Numeric]"
-    if grouping2:
-        pattern = r".+\s*\[(Factor|Numeric)\]$"
-        if not re.match(pattern, grouping2):
-            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
-
-    # 3. backgroundExpression must be >= 0
-    if backgroundExpression is not None and backgroundExpression < 0:
-        warnings.append("Warning: backgroundExpression must be ≥ 0.")
-
-    # 4. pValThreshGO, fdrThreshORA, fdrThreshGSEA must be > 0 and ≤ 1
-    for val, name in [
-        (pValThreshGO, "pValThreshGO"),
-        (fdrThreshORA, "fdrThreshORA"),
-        (fdrThreshGSEA, "fdrThreshGSEA"),
-    ]:
-        if val is None or not (0 < val <= 1):
-            warnings.append(f"Warning: {name} must be > 0 and ≤ 1.")
-
-    # 5. log2RatioThreshGO must be >= 0
-    if log2RatioThreshGO is not None and log2RatioThreshGO < 0:
-        warnings.append("Warning: log2RatioThreshGO must be ≥ 0.")
-
-    # Output all warnings
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -444,34 +299,37 @@ def callback(data, sidebar):
         Output(id('cores'), 'value'),
         Output(id('ram'), 'value'),
         Output(id('scratch'), 'value'),
-        Output(id('onlyCompGroupsHeatmap'), 'value'),
-        Output(id('transcriptTypes'), 'value'),
+        Output(id('refBuild'), 'value'),
+        Output(id('refFeatureFile'), 'value'),
+        Output(id('featureLevel'), 'value'),
+        Output(id('normMethod'), 'value'),
         Output(id('runGO'), 'value'),
-        Output(id('pValThreshGO'), 'value'),
-        Output(id('log2RatioThreshGO'), 'value'),
-        Output(id('fdrThreshORA'), 'value'),
-        Output(id('fdrThreshGSEA'), 'value'),
-        Output(id('Rversion'), 'value'),
+        Output(id('backgroundExpression'), 'value'),
+        Output(id('topGeneSize'), 'value'),
+        Output(id('selectByFtest'), 'value'),
+        Output(id('transcriptTypes'), 'value'),
     ],
     [Input('entity', 'data')],
     [State('app_data', 'data')]
 )
 def populate_default_values(entity_data, app_data):
-    name = entity_data.get("name", "Unknown") + "_DESeq2"
+    name = entity_data.get("name", "Unknown") + "_CountQC"
     return (
         name,
+        1,
         4,
-        12,
         10,
+        "Homo_sapiens/GENCODE/GRC",
+        "genes.gtf",
+        "gene",
+        "logMean",
         True,
-        "protein_coding",
-        True,
-        0.01,
-        0,
-        0.05,
-        0.05,
-        "Dev/R/4.4.2"
+        10,
+        100,
+        False,
+        "protein_coding"
     )
+
 
 
 
@@ -497,14 +355,13 @@ def update_dataset(entity_data, dataset):
 ######################################################################################################
 ############################### STEP 3: Submit the Job! ##############################################
 ###################################################################################################### 
+
 @app.callback(
     [
         Output(id("alert-fade-success"), "is_open"),
         Output(id("alert-fade-fail"), "is_open"),
     ],
-    [
-        Input('Submit', "n_clicks"),
-    ],
+    [Input("Submit", "n_clicks")],
     [
         State(id('name'), 'value'),
         State(id('comment'), 'value'),
@@ -514,25 +371,19 @@ def update_dataset(entity_data, dataset):
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
         State(id('samples'), 'value'),
+        State(id('label_name'), 'value'),
         State(id('refBuild'), 'value'),
         State(id('refFeatureFile'), 'value'),
         State(id('featureLevel'), 'value'),
-        State(id('grouping'), 'value'),
-        State(id('sampleGroup'), 'value'),
-        State(id('refGroup'), 'value'),
-        State(id('onlyCompGroupsHeatmap'), 'value'),
-        State(id('grouping2'), 'value'),
-        State(id('backgroundExpression'), 'value'),
-        State(id('transcriptTypes'), 'value'),
+        State(id('normMethod'), 'value'),
         State(id('runGO'), 'value'),
-        State(id('pValThreshGO'), 'value'),
-        State(id('log2RatioThreshGO'), 'value'),
-        State(id('fdrThreshORA'), 'value'),
-        State(id('fdrThreshGSEA'), 'value'),
+        State(id('backgroundExpression'), 'value'),
+        State(id('topGeneSize'), 'value'),
+        State(id('selectByFtest'), 'value'),
+        State(id('transcriptTypes'), 'value'),
         State(id('specialOptions'), 'value'),
         State(id('expressionName'), 'value'),
         State(id('mail'), 'value'),
-        State(id('Rversion'), 'value'),
         State(id("dataset"), "data"),
         State('datatable', 'selected_rows'),
         State('token_data', 'data'),
@@ -541,12 +392,10 @@ def update_dataset(entity_data, dataset):
     ],
     prevent_initial_call=True
 )
-def submit_deseq_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
-    refBuild, refFeatureFile, featureLevel, grouping, sampleGroup, refGroup,
-    onlyCompGroupsHeatmap, grouping2, backgroundExpression, transcriptTypes,
-    runGO, pValThreshGO, log2RatioThreshGO, fdrThreshORA, fdrThreshGSEA,
-    specialOptions, expressionName, mail, Rversion,
+def submit_countqc_job(
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples, label_name,
+    refBuild, refFeatureFile, featureLevel, normMethod, runGO, backgroundExpression, topGeneSize,
+    selectByFtest, transcriptTypes, specialOptions, expressionName, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
     try:
@@ -556,33 +405,27 @@ def submit_deseq_job(
         dataset_df.to_csv(dataset_path, sep="\t", index=False)
 
         param_dict = {
+            'name': name,
+            'comment': comment,
             'cores': cores,
             'ram': ram,
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
             'samples': samples,
+            'label_name': label_name,
             'refBuild': refBuild,
             'refFeatureFile': refFeatureFile,
             'featureLevel': featureLevel,
-            'grouping': grouping,
-            'sampleGroup': sampleGroup,
-            'refGroup': refGroup,
-            'onlyCompGroupsHeatmap': onlyCompGroupsHeatmap,
-            'grouping2': grouping2,
-            'backgroundExpression': backgroundExpression,
-            'transcriptTypes': transcriptTypes,
+            'normMethod': normMethod,
             'runGO': runGO,
-            'pValThreshGO': pValThreshGO,
-            'log2RatioThreshGO': log2RatioThreshGO,
-            'fdrThreshORA': fdrThreshORA,
-            'fdrThreshGSEA': fdrThreshGSEA,
+            'backgroundExpression': backgroundExpression,
+            'topGeneSize': topGeneSize,
+            'selectByFtest': selectByFtest,
+            'transcriptTypes': transcriptTypes,
             'specialOptions': specialOptions,
             'expressionName': expressionName,
-            'mail': mail,
-            'Rversion': Rversion,
-            'name': name,
-            'comment': comment
+            'mail': mail
         }
 
         param_df = pd.DataFrame({"col1": list(param_dict.keys()), "col2": list(param_dict.values())})
@@ -595,7 +438,7 @@ def submit_deseq_job(
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
-            bundle exec sushi_fabric --class DESeq2 --dataset {dataset_path} --parameterset {param_path} --run \\
+            bundle exec sushi_fabric --class CountQC --dataset {dataset_path} --parameterset {param_path} --run \\
             --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """

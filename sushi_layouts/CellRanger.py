@@ -29,7 +29,7 @@ import os
 ####################################################################################
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-title = 'DESeq2'
+title = 'CellRanger'
 
 label_style = {
     "font-size": "0.85rem",   # Smaller text
@@ -43,14 +43,10 @@ def id(name):
 # Component styles
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-
-# DESeq2 Sidebar layout with tooltips
+# CellRangerApp Sidebar layout (updated with dropdown values)
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P(
-            "DESeq2 App Generic Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("CellRanger App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -62,39 +58,21 @@ sidebar = dbc.Container(
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
 
-        html.P(
-            "DESeq2 App Specific Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("CellRanger App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
-            dbc.Select(
-                id=f'{title}_cores',
-                options=[{'label': str(x), 'value': x} for x in [1, 2, 4, 8]],
-                value=4,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_cores', value=8, type='number', style=component_styles)
         ]),
 
         html.Div([
             dbc.Label("RAM", style=label_style),
-            dbc.Select(
-                id=f'{title}_ram',
-                options=[{'label': str(x), 'value': x} for x in [12, 24, 48]],
-                value=12,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_ram', value=60, type='number', style=component_styles)
         ]),
 
         html.Div([
             dbc.Label("Scratch", style=label_style),
-            dbc.Select(
-                id=f'{title}_scratch',
-                options=[{'label': str(x), 'value': x} for x in [10, 50, 100]],
-                value=10,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_scratch', value=300, type='number', style=component_styles)
         ]),
 
         html.Div([
@@ -111,8 +89,8 @@ sidebar = dbc.Container(
             dbc.Label("Process Mode", style=label_style),
             dbc.Select(
                 id=f'{title}_process_mode',
-                options=[{'label': 'DATASET', 'value': 'DATASET'}],
-                value='DATASET',
+                options=[{'label': 'SAMPLE', 'value': 'SAMPLE'}],
+                value='SAMPLE',
                 style=component_styles
             )
         ]),
@@ -123,8 +101,15 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
+            dbc.Label("Label Name", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_label_name', value='CellRangerCount', type='text', style=component_styles),
+            dbc.Tooltip("required", target=f'{title}_label_name', placement="right")
+        ]),
+
+        html.Div([
             dbc.Label("refBuild", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_refBuild', value='Homo_sapiens/GENCODE/GRC', type='text', style=component_styles)
+            dbc.Input(id=f'{title}_refBuild', value='', type='text', style=component_styles),
+            dbc.Tooltip("required", target=f'{title}_refBuild', placement="right")
         ]),
 
         html.Div([
@@ -143,119 +128,112 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("Grouping", style={"font-size": "0.85rem"}),
+            dbc.Label("TenXLibrary", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_grouping',
-                options=[{'label': 'condition', 'value': 'condition'}],
-                value='condition',
+                id=f'{title}_TenXLibrary',
+                options=[{'label': x, 'value': x} for x in ['GEX', 'VDJ', 'FeatureBarcoding']],
+                value='GEX',
                 style=component_styles
             ),
-            dbc.Tooltip("required", target=f'{title}_grouping', placement="right")
+            dbc.Tooltip("Which 10X library? GEX, VDJ or FeatureBarcoding", target=f'{title}_TenXLibrary', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("Sample Group", style={"font-size": "0.85rem"}),
+            dbc.Label("Chemistry", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_sampleGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Hetero',
+                id=f'{title}_chemistry',
+                options=[{'label': x, 'value': x} for x in ['ThreePrime', 'FivePrime', 'SC3PV1', 'SC3PV2', 'SC3PV3', 'SC5P-PE', 'SC5P-R2', 'ARC-v1']],
+                value='ThreePrime',
                 style=component_styles
             ),
-            dbc.Tooltip("required. sampleGroup should be different from refGroup", target=f'{title}_sampleGroup', placement="right")
+            dbc.Tooltip("Assay configuration. By default, auto-detected (recommended).", target=f'{title}_chemistry', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("Reference Group", style={"font-size": "0.85rem"}),
+            dbc.Label("Include Introns", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_refGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Controls',
-                style=component_styles
-            ),
-            dbc.Tooltip("required. refGroup should be different from sampleGroup", target=f'{title}_refGroup', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("Only Comparison Groups in Heatmap", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_onlyCompGroupsHeatmap',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
+                id=f'{title}_includeIntrons',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
                 value=True,
                 style=component_styles
             ),
-            dbc.Tooltip("Only show the samples from comparison groups in heatmap", target=f'{title}_onlyCompGroupsHeatmap', placement="right")
+            dbc.Tooltip("Set to false to reproduce the default behavior in Cell Ranger v6 and earlier", target=f'{title}_includeIntrons', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("grouping2", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_grouping2', value='', type='text', style=component_styles),
-            dbc.Tooltip(
-                "specify the column name of your secondary co-variate (factor or numeric, assuming there is one). Ensure the column name is in the format 'NAME [Factor]' or 'NAME [Numeric]'",
-                target=f'{title}_grouping2',
-                placement="right"
-            )
+            dbc.Label("Expected Cells", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_expectedCells', value='', type='number', style=component_styles),
+            dbc.Tooltip("Expected number of recovered cells. Leave blank to auto-estimate", target=f'{title}_expectedCells', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("backgroundExpression", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_backgroundExpression', value=10, type='number', style=component_styles),
-            dbc.Tooltip("additive offset used in heatmaps", target=f'{title}_backgroundExpression', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("transcriptTypes", style={"font-size": "0.85rem"}),
+            dbc.Label("Transcript Types", style={"font-size": "0.85rem"}),
             dbc.Select(
                 id=f'{title}_transcriptTypes',
                 options=[
                     {"label": "protein_coding", "value": "protein_coding"},
-                    {"label": "long_noncoding", "value": "long_noncoding"}
+                    {"label": "rRNA", "value": "rRNA"},
+                    {"label": "tRNA", "value": "tRNA"},
+                    {"label": "Mt_rRNA", "value": "Mt_rRNA"},
+                    {"label": "Mt_tRNA", "value": "Mt_tRNA"},
+                    {"label": "long_noncoding", "value": "long_noncoding"},
+                    {"label": "short_noncoding", "value": "short_noncoding"},
+                    {"label": "pseudogene", "value": "pseudogene"}
                 ],
-                value="protein_coding",
+                value='protein_coding',
                 style=component_styles
             )
         ]),
 
         html.Div([
-            dbc.Label("runGO", style={"font-size": "0.85rem"}),
+            dbc.Label("controlSeqs", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_controlSeqs', value='', type='text', style=component_styles),
+            dbc.Tooltip("Spike-in control sequences; see fgcz-gstore UZH reference", target=f'{title}_controlSeqs', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("secondRef", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_secondRef', value='', type='text', style=component_styles),
+            dbc.Tooltip("Full path to FASTA file with viralGenes etc.", target=f'{title}_secondRef', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("runVeloCyto", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_runGO',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
+                id=f'{title}_runVeloCyto',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=False,
+                style=component_styles
+            ),
+            dbc.Tooltip("Generate loom file via Velocyto", target=f'{title}_runVeloCyto', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("bamStats", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_bamStats',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=False,
+                style=component_styles
+            ),
+            dbc.Tooltip("Compute stats per cell from BAM", target=f'{title}_bamStats', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("keepAlignment", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_keepAlignment',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
                 value=True,
                 style=component_styles
             ),
-            dbc.Tooltip("perform ORA and GSEA with Gene Ontology annotations", target=f'{title}_runGO', placement="right")
+            dbc.Tooltip("Keep CRAM/BAM file produced by CellRanger", target=f'{title}_keepAlignment', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("pValThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_pValThreshGO', value=0.01, type='number', style=component_styles),
-            dbc.Tooltip("pValue cut-off for ORA candidate gene selection", target=f'{title}_pValThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("log2RatioThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_log2RatioThreshGO', value=0, type='number', style=component_styles),
-            dbc.Tooltip("log2 FoldChange cut-off for ORA candidate gene selection", target=f'{title}_log2RatioThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshORA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshORA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in ORA", target=f'{title}_fdrThreshORA', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshGSEA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshGSEA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in GSEA", target=f'{title}_fdrThreshGSEA', placement="right")
+            dbc.Label("cmdOptions", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_cmdOptions', value='', type='text', style=component_styles),
+            dbc.Tooltip("Extra command line args; avoid duplication of known fields", target=f'{title}_cmdOptions', placement="right")
         ]),
 
         html.Div([
@@ -264,21 +242,20 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("expressionName", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_expressionName', value='', type='text', style=component_styles)
-        ]),
-
-        html.Div([
-            dbc.Label("Mail", style={"font-size": "0.85rem"}),
+            dbc.Label("mail", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_mail', value='', type='email', style=component_styles)
         ]),
 
         html.Div([
-            dbc.Label("Rversion", style={"font-size": "0.85rem"}),
+            dbc.Label("CellRangerVersion", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_Rversion',
-                options=[{"label": "Dev/R/4.4.2", "value": "Dev/R/4.4.2"}],
-                value="Dev/R/4.4.2",
+                id=f'{title}_CellRangerVersion',
+                options=[
+                    {'label': "Aligner/CellRanger/9.0.0", 'value': "Aligner/CellRanger/9.0.0"},
+                    {'label': "Aligner/CellRanger/8.0.1", 'value': "Aligner/CellRanger/8.0.1"},
+                    {'label': "Aligner/CellRanger/7.1.0", 'value': "Aligner/CellRanger/7.1.0"},
+                ],
+                value="Aligner/CellRanger/9.0.0",
                 style=component_styles
             )
         ]),
@@ -287,8 +264,6 @@ sidebar = dbc.Container(
     ],
     style={"max-height": "62vh", "overflow-y": "auto", "overflow-x": "hidden"}
 )
-
-
 
 
 ####################################################################################
@@ -315,65 +290,6 @@ alerts = html.Div(
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-import re
-from dash import html
-from dash.dependencies import Input, Output
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("sampleGroup"), "value"),
-        Input(id("refGroup"), "value"),
-        Input(id("grouping2"), "value"),
-        Input(id("backgroundExpression"), "value"),
-        Input(id("pValThreshGO"), "value"),
-        Input(id("log2RatioThreshGO"), "value"),
-        Input(id("fdrThreshORA"), "value"),
-        Input(id("fdrThreshGSEA"), "value"),
-    ]
-)
-def check_image_based_warnings(sampleGroup, refGroup, grouping2,
-                               backgroundExpression, pValThreshGO, log2RatioThreshGO,
-                               fdrThreshORA, fdrThreshGSEA):
-    warnings = []
-
-    # 1. sampleGroup and refGroup must be different
-    if sampleGroup and refGroup and sampleGroup == refGroup:
-        warnings.append("Warning: sampleGroup should be different from refGroup.")
-
-    # 2. grouping2 format: must match "NAME [Factor]" or "NAME [Numeric]"
-    if grouping2:
-        pattern = r".+\s*\[(Factor|Numeric)\]$"
-        if not re.match(pattern, grouping2):
-            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
-
-    # 3. backgroundExpression must be >= 0
-    if backgroundExpression is not None and backgroundExpression < 0:
-        warnings.append("Warning: backgroundExpression must be ≥ 0.")
-
-    # 4. pValThreshGO, fdrThreshORA, fdrThreshGSEA must be > 0 and ≤ 1
-    for val, name in [
-        (pValThreshGO, "pValThreshGO"),
-        (fdrThreshORA, "fdrThreshORA"),
-        (fdrThreshGSEA, "fdrThreshGSEA"),
-    ]:
-        if val is None or not (0 < val <= 1):
-            warnings.append(f"Warning: {name} must be > 0 and ≤ 1.")
-
-    # 5. log2RatioThreshGO must be >= 0
-    if log2RatioThreshGO is not None and log2RatioThreshGO < 0:
-        warnings.append("Warning: log2RatioThreshGO must be ≥ 0.")
-
-    # Output all warnings
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -438,39 +354,88 @@ def callback(data, sidebar):
 ##### C. Now we populate components with default values (Step 1: Get data from the user) #####
 ##############################################################################################
 
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("label_name"), "value"),
+        Input(id("refBuild"), "value"),
+        Input(id("expectedCells"), "value"),
+    ]
+)
+def check_cellranger_warnings(label_name, refBuild, expectedCells):
+    warnings = []
+
+    # 1. label_name required
+    if not label_name:
+        warnings.append("Warning: 'Label Name' is required. Please enter a value.")
+
+    # 2. refBuild required
+    if not refBuild:
+        warnings.append("Warning: 'refBuild' is required. Please select a reference genome.")
+
+    # 3. expectedCells must be ≥ 0
+    if expectedCells is not None and expectedCells < 0:
+        warnings.append("Warning: 'expectedCells' must be ≥ 0.")
+
+    # Output
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
+
+
+
+
+
+
+
+
+
+
+
+
 @app.callback(
     [
         Output(id('name'), 'value'),
         Output(id('cores'), 'value'),
         Output(id('ram'), 'value'),
         Output(id('scratch'), 'value'),
-        Output(id('onlyCompGroupsHeatmap'), 'value'),
+        Output(id('label_name'), 'value'),
+        Output(id('refBuild'), 'value'),
+        Output(id('refFeatureFile'), 'value'),
+        Output(id('featureLevel'), 'value'),
+        Output(id('TenXLibrary'), 'value'),
+        Output(id('chemistry'), 'value'),
+        Output(id('includeIntrons'), 'value'),
         Output(id('transcriptTypes'), 'value'),
-        Output(id('runGO'), 'value'),
-        Output(id('pValThreshGO'), 'value'),
-        Output(id('log2RatioThreshGO'), 'value'),
-        Output(id('fdrThreshORA'), 'value'),
-        Output(id('fdrThreshGSEA'), 'value'),
-        Output(id('Rversion'), 'value'),
+        Output(id('runVeloCyto'), 'value'),
+        Output(id('bamStats'), 'value'),
+        Output(id('keepAlignment'), 'value'),
+        Output(id('CellRangerVersion'), 'value'),
     ],
     [Input('entity', 'data')],
     [State('app_data', 'data')]
 )
 def populate_default_values(entity_data, app_data):
-    name = entity_data.get("name", "Unknown") + "_DESeq2"
+    name = entity_data.get("name", "Unknown") + "_CellRanger"
     return (
         name,
-        4,
-        12,
-        10,
+        8,
+        60,
+        300,
+        "CellRangerCount",
+        "",
+        "genes.gtf",
+        "gene",
+        "GEX",
+        "auto",
         True,
         "protein_coding",
+        False,
+        False,
         True,
-        0.01,
-        0,
-        0.05,
-        0.05,
-        "Dev/R/4.4.2"
+        "Aligner/CellRanger/9.0.0"
     )
 
 
@@ -497,14 +462,13 @@ def update_dataset(entity_data, dataset):
 ######################################################################################################
 ############################### STEP 3: Submit the Job! ##############################################
 ###################################################################################################### 
+
 @app.callback(
     [
         Output(id("alert-fade-success"), "is_open"),
         Output(id("alert-fade-fail"), "is_open"),
     ],
-    [
-        Input('Submit', "n_clicks"),
-    ],
+    [Input("Submit", "n_clicks")],
     [
         State(id('name'), 'value'),
         State(id('comment'), 'value'),
@@ -514,25 +478,24 @@ def update_dataset(entity_data, dataset):
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
         State(id('samples'), 'value'),
+        State(id('label_name'), 'value'),
         State(id('refBuild'), 'value'),
         State(id('refFeatureFile'), 'value'),
         State(id('featureLevel'), 'value'),
-        State(id('grouping'), 'value'),
-        State(id('sampleGroup'), 'value'),
-        State(id('refGroup'), 'value'),
-        State(id('onlyCompGroupsHeatmap'), 'value'),
-        State(id('grouping2'), 'value'),
-        State(id('backgroundExpression'), 'value'),
+        State(id('TenXLibrary'), 'value'),
+        State(id('chemistry'), 'value'),
+        State(id('includeIntrons'), 'value'),
+        State(id('expectedCells'), 'value'),
         State(id('transcriptTypes'), 'value'),
-        State(id('runGO'), 'value'),
-        State(id('pValThreshGO'), 'value'),
-        State(id('log2RatioThreshGO'), 'value'),
-        State(id('fdrThreshORA'), 'value'),
-        State(id('fdrThreshGSEA'), 'value'),
+        State(id('controlSeqs'), 'value'),
+        State(id('secondRef'), 'value'),
+        State(id('runVeloCyto'), 'value'),
+        State(id('bamStats'), 'value'),
+        State(id('keepAlignment'), 'value'),
+        State(id('cmdOptions'), 'value'),
         State(id('specialOptions'), 'value'),
-        State(id('expressionName'), 'value'),
         State(id('mail'), 'value'),
-        State(id('Rversion'), 'value'),
+        State(id('CellRangerVersion'), 'value'),
         State(id("dataset"), "data"),
         State('datatable', 'selected_rows'),
         State('token_data', 'data'),
@@ -541,12 +504,11 @@ def update_dataset(entity_data, dataset):
     ],
     prevent_initial_call=True
 )
-def submit_deseq_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
-    refBuild, refFeatureFile, featureLevel, grouping, sampleGroup, refGroup,
-    onlyCompGroupsHeatmap, grouping2, backgroundExpression, transcriptTypes,
-    runGO, pValThreshGO, log2RatioThreshGO, fdrThreshORA, fdrThreshGSEA,
-    specialOptions, expressionName, mail, Rversion,
+def submit_cellranger_job(
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples, label_name,
+    refBuild, refFeatureFile, featureLevel, TenXLibrary, chemistry, includeIntrons, expectedCells,
+    transcriptTypes, controlSeqs, secondRef, runVeloCyto, bamStats, keepAlignment, cmdOptions,
+    specialOptions, mail, CellRangerVersion,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
     try:
@@ -556,33 +518,32 @@ def submit_deseq_job(
         dataset_df.to_csv(dataset_path, sep="\t", index=False)
 
         param_dict = {
+            'name': name,
+            'comment': comment,
             'cores': cores,
             'ram': ram,
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
             'samples': samples,
+            'label_name': label_name,
             'refBuild': refBuild,
             'refFeatureFile': refFeatureFile,
             'featureLevel': featureLevel,
-            'grouping': grouping,
-            'sampleGroup': sampleGroup,
-            'refGroup': refGroup,
-            'onlyCompGroupsHeatmap': onlyCompGroupsHeatmap,
-            'grouping2': grouping2,
-            'backgroundExpression': backgroundExpression,
+            'TenXLibrary': TenXLibrary,
+            'chemistry': chemistry,
+            'includeIntrons': includeIntrons,
+            'expectedCells': expectedCells,
             'transcriptTypes': transcriptTypes,
-            'runGO': runGO,
-            'pValThreshGO': pValThreshGO,
-            'log2RatioThreshGO': log2RatioThreshGO,
-            'fdrThreshORA': fdrThreshORA,
-            'fdrThreshGSEA': fdrThreshGSEA,
+            'controlSeqs': controlSeqs,
+            'secondRef': secondRef,
+            'runVeloCyto': runVeloCyto,
+            'bamStats': bamStats,
+            'keepAlignment': keepAlignment,
+            'cmdOptions': cmdOptions,
             'specialOptions': specialOptions,
-            'expressionName': expressionName,
             'mail': mail,
-            'Rversion': Rversion,
-            'name': name,
-            'comment': comment
+            'CellRangerVersion': CellRangerVersion
         }
 
         param_df = pd.DataFrame({"col1": list(param_dict.keys()), "col2": list(param_dict.values())})
@@ -595,7 +556,7 @@ def submit_deseq_job(
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
-            bundle exec sushi_fabric --class DESeq2 --dataset {dataset_path} --parameterset {param_path} --run \\
+            bundle exec sushi_fabric --class CellRanger --dataset {dataset_path} --parameterset {param_path} --run \\
             --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """

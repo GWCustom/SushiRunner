@@ -29,7 +29,7 @@ import os
 ####################################################################################
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-title = 'DESeq2'
+title = 'FeatureCounts'
 
 label_style = {
     "font-size": "0.85rem",   # Smaller text
@@ -43,14 +43,10 @@ def id(name):
 # Component styles
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-
-# DESeq2 Sidebar layout with tooltips
+# FeatureCounts Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P(
-            "DESeq2 App Generic Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("FeatureCounts App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -62,39 +58,21 @@ sidebar = dbc.Container(
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
 
-        html.P(
-            "DESeq2 App Specific Parameters:",
-            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
-        ),
+        html.P("FeatureCounts App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
-            dbc.Select(
-                id=f'{title}_cores',
-                options=[{'label': str(x), 'value': x} for x in [1, 2, 4, 8]],
-                value=4,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_cores', value=8, type='number', style=component_styles)
         ]),
 
         html.Div([
             dbc.Label("RAM", style=label_style),
-            dbc.Select(
-                id=f'{title}_ram',
-                options=[{'label': str(x), 'value': x} for x in [12, 24, 48]],
-                value=12,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_ram', value=20, type='number', style=component_styles)
         ]),
 
         html.Div([
             dbc.Label("Scratch", style=label_style),
-            dbc.Select(
-                id=f'{title}_scratch',
-                options=[{'label': str(x), 'value': x} for x in [10, 50, 100]],
-                value=10,
-                style=component_styles
-            )
+            dbc.Input(id=f'{title}_scratch', value=10, type='number', style=component_styles)
         ]),
 
         html.Div([
@@ -111,8 +89,8 @@ sidebar = dbc.Container(
             dbc.Label("Process Mode", style=label_style),
             dbc.Select(
                 id=f'{title}_process_mode',
-                options=[{'label': 'DATASET', 'value': 'DATASET'}],
-                value='DATASET',
+                options=[{'label': 'SAMPLE', 'value': 'SAMPLE'}],
+                value='SAMPLE',
                 style=component_styles
             )
         ]),
@@ -124,7 +102,30 @@ sidebar = dbc.Container(
 
         html.Div([
             dbc.Label("refBuild", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_refBuild', value='Homo_sapiens/GENCODE/GRC', type='text', style=component_styles)
+            dbc.Input(id=f'{title}_refBuild', value='Homo_sapiens/GENCODE/GRC', type='text', style=component_styles),
+            dbc.Tooltip("required", target=f'{title}_refBuild', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("Paired", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_paired',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=True,
+                style=component_styles
+            ),
+            dbc.Tooltip("required", target=f'{title}_paired', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("Strand Mode", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_strandMode',
+                options=[{'label': x, 'value': x} for x in ['none', 'sense', 'antisense']],
+                value='antisense',
+                style=component_styles
+            ),
+            dbc.Tooltip("required", target=f'{title}_strandMode', placement="right")
         ]),
 
         html.Div([
@@ -143,71 +144,61 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("Grouping", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_grouping',
-                options=[{'label': 'condition', 'value': 'condition'}],
-                value='condition',
-                style=component_styles
-            ),
-            dbc.Tooltip("required", target=f'{title}_grouping', placement="right")
+            dbc.Label("gtfFeatureType", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_gtfFeatureType', value='exon', type='text', style=component_styles),
+            dbc.Tooltip("which atomic features of the gtf should be used to define the meta-features; see featureLevel", target=f'{title}_gtfFeatureType', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("Sample Group", style={"font-size": "0.85rem"}),
+            dbc.Label("allowMultiOverlap", style={"font-size": "0.85rem"}),
             dbc.Select(
-                id=f'{title}_sampleGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Hetero',
-                style=component_styles
-            ),
-            dbc.Tooltip("required. sampleGroup should be different from refGroup", target=f'{title}_sampleGroup', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("Reference Group", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_refGroup',
-                options=[
-                    {"label": "Controls", "value": "Controls"},
-                    {"label": "Hetero", "value": "Hetero"},
-                    {"label": "Homo", "value": "Homo"}
-                ],
-                value='Controls',
-                style=component_styles
-            ),
-            dbc.Tooltip("required. refGroup should be different from sampleGroup", target=f'{title}_refGroup', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("Only Comparison Groups in Heatmap", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_onlyCompGroupsHeatmap',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
+                id=f'{title}_allowMultiOverlap',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
                 value=True,
                 style=component_styles
             ),
-            dbc.Tooltip("Only show the samples from comparison groups in heatmap", target=f'{title}_onlyCompGroupsHeatmap', placement="right")
+            dbc.Tooltip("count alignments that fall in a region where multiple features are annotated", target=f'{title}_allowMultiOverlap', placement="right")
         ]),
 
         html.Div([
-            dbc.Label("grouping2", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_grouping2', value='', type='text', style=component_styles),
-            dbc.Tooltip(
-                "specify the column name of your secondary co-variate (factor or numeric, assuming there is one). Ensure the column name is in the format 'NAME [Factor]' or 'NAME [Numeric]'",
-                target=f'{title}_grouping2',
-                placement="right"
+            dbc.Label("countPrimaryAlignmentsOnly", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_countPrimaryAlignmentsOnly',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=True,
+                style=component_styles
             )
         ]),
 
         html.Div([
-            dbc.Label("backgroundExpression", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_backgroundExpression', value=10, type='number', style=component_styles),
-            dbc.Tooltip("additive offset used in heatmaps", target=f'{title}_backgroundExpression', placement="right")
+            dbc.Label("minFeatureOverlap", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_minFeatureOverlap', value=10, type='number', style=component_styles),
+            dbc.Tooltip("minimum overlap of a read with a transcript feature", target=f'{title}_minFeatureOverlap', placement="right")
+        ]),
+
+        html.Div([
+            dbc.Label("minMapQuality", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_minMapQuality', value=10, type='number', style=component_styles)
+        ]),
+
+        html.Div([
+            dbc.Label("keepMultiHits", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_keepMultiHits',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=True,
+                style=component_styles
+            )
+        ]),
+
+        html.Div([
+            dbc.Label("ignoreDup", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_ignoreDup',
+                options=[{'label': 'True', 'value': True}, {'label': 'False', 'value': False}],
+                value=False,
+                style=component_styles
+            )
         ]),
 
         html.Div([
@@ -216,46 +207,23 @@ sidebar = dbc.Container(
                 id=f'{title}_transcriptTypes',
                 options=[
                     {"label": "protein_coding", "value": "protein_coding"},
-                    {"label": "long_noncoding", "value": "long_noncoding"}
+                    {"label": "rRNA", "value": "rRNA"},
+                    {"label": "tRNA", "value": "tRNA"},
+                    {"label": "Mt_rRNA", "value": "Mt_rRNA"},
+                    {"label": "Mt_tRNA", "value": "Mt_tRNA"},
+                    {"label": "long_noncoding", "value": "long_noncoding"},
+                    {"label": "short_noncoding", "value": "short_noncoding"},
+                    {"label": "pseudogene", "value": "pseudogene"}
                 ],
-                value="protein_coding",
+                value='protein_coding',
                 style=component_styles
             )
         ]),
 
         html.Div([
-            dbc.Label("runGO", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_runGO',
-                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
-                value=True,
-                style=component_styles
-            ),
-            dbc.Tooltip("perform ORA and GSEA with Gene Ontology annotations", target=f'{title}_runGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("pValThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_pValThreshGO', value=0.01, type='number', style=component_styles),
-            dbc.Tooltip("pValue cut-off for ORA candidate gene selection", target=f'{title}_pValThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("log2RatioThreshGO", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_log2RatioThreshGO', value=0, type='number', style=component_styles),
-            dbc.Tooltip("log2 FoldChange cut-off for ORA candidate gene selection", target=f'{title}_log2RatioThreshGO', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshORA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshORA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in ORA", target=f'{title}_fdrThreshORA', placement="right")
-        ]),
-
-        html.Div([
-            dbc.Label("fdrThreshGSEA", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_fdrThreshGSEA', value=0.05, type='number', style=component_styles),
-            dbc.Tooltip("adjusted pValue cut-off for GO terms in GSEA", target=f'{title}_fdrThreshGSEA', placement="right")
+            dbc.Label("secondRef", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_secondRef', value='', type='text', style=component_styles),
+            dbc.Tooltip("extra DNA/RNA sequences to use for alignment; needs to point to a file on FGCZ servers; if the .fasta file has a corresponding .gtf file, this file needs to have the same base name, e.g. a file 'foo.fa' in folder /path/to/file/ requires a file 'foo.gtf' in the same folder in order for the gtf file to be used; ask for upload sushi@fgcz.ethz.ch.", target=f'{title}_secondRef', placement="right")
         ]),
 
         html.Div([
@@ -264,31 +232,14 @@ sidebar = dbc.Container(
         ]),
 
         html.Div([
-            dbc.Label("expressionName", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_expressionName', value='', type='text', style=component_styles)
-        ]),
-
-        html.Div([
-            dbc.Label("Mail", style={"font-size": "0.85rem"}),
+            dbc.Label("mail", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_mail', value='', type='email', style=component_styles)
-        ]),
-
-        html.Div([
-            dbc.Label("Rversion", style={"font-size": "0.85rem"}),
-            dbc.Select(
-                id=f'{title}_Rversion',
-                options=[{"label": "Dev/R/4.4.2", "value": "Dev/R/4.4.2"}],
-                value="Dev/R/4.4.2",
-                style=component_styles
-            )
         ]),
 
         dbc.Button("Submit", id=submitbutton_id(f'{title}_submit1'), n_clicks=0, style={"margin-top": "18px", 'borderBottom': '1px solid lightgrey'})
     ],
     style={"max-height": "62vh", "overflow-y": "auto", "overflow-x": "hidden"}
 )
-
-
 
 
 ####################################################################################
@@ -315,65 +266,6 @@ alerts = html.Div(
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-import re
-from dash import html
-from dash.dependencies import Input, Output
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("sampleGroup"), "value"),
-        Input(id("refGroup"), "value"),
-        Input(id("grouping2"), "value"),
-        Input(id("backgroundExpression"), "value"),
-        Input(id("pValThreshGO"), "value"),
-        Input(id("log2RatioThreshGO"), "value"),
-        Input(id("fdrThreshORA"), "value"),
-        Input(id("fdrThreshGSEA"), "value"),
-    ]
-)
-def check_image_based_warnings(sampleGroup, refGroup, grouping2,
-                               backgroundExpression, pValThreshGO, log2RatioThreshGO,
-                               fdrThreshORA, fdrThreshGSEA):
-    warnings = []
-
-    # 1. sampleGroup and refGroup must be different
-    if sampleGroup and refGroup and sampleGroup == refGroup:
-        warnings.append("Warning: sampleGroup should be different from refGroup.")
-
-    # 2. grouping2 format: must match "NAME [Factor]" or "NAME [Numeric]"
-    if grouping2:
-        pattern = r".+\s*\[(Factor|Numeric)\]$"
-        if not re.match(pattern, grouping2):
-            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
-
-    # 3. backgroundExpression must be >= 0
-    if backgroundExpression is not None and backgroundExpression < 0:
-        warnings.append("Warning: backgroundExpression must be ≥ 0.")
-
-    # 4. pValThreshGO, fdrThreshORA, fdrThreshGSEA must be > 0 and ≤ 1
-    for val, name in [
-        (pValThreshGO, "pValThreshGO"),
-        (fdrThreshORA, "fdrThreshORA"),
-        (fdrThreshGSEA, "fdrThreshGSEA"),
-    ]:
-        if val is None or not (0 < val <= 1):
-            warnings.append(f"Warning: {name} must be > 0 and ≤ 1.")
-
-    # 5. log2RatioThreshGO must be >= 0
-    if log2RatioThreshGO is not None and log2RatioThreshGO < 0:
-        warnings.append("Warning: log2RatioThreshGO must be ≥ 0.")
-
-    # Output all warnings
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -439,40 +331,91 @@ def callback(data, sidebar):
 ##############################################################################################
 
 @app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("refBuild"), "value"),
+        Input(id("paired"), "value"),
+        Input(id("strandMode"), "value"),
+        Input(id("minFeatureOverlap"), "value"),
+        Input(id("minMapQuality"), "value"),
+    ]
+)
+def check_featurecounts_warnings(refBuild, paired, strandMode, minFeatureOverlap, minMapQuality):
+    warnings = []
+
+    # 1. refBuild required
+    if not refBuild:
+        warnings.append("Warning: refBuild is required. Please select a reference genome.")
+
+    # 2. paired required
+    if paired is None:
+        warnings.append("Warning: paired is required. Please select true or false.")
+
+    # 3. strandMode required
+    if not strandMode:
+        warnings.append("Warning: strandMode is required. Please select a mode (none, sense, antisense).")
+
+    # 4. minFeatureOverlap must be ≥ 0
+    if minFeatureOverlap is not None and minFeatureOverlap < 0:
+        warnings.append("Warning: minFeatureOverlap must be ≥ 0.")
+
+    # 5. minMapQuality must be ≥ 0
+    if minMapQuality is not None and minMapQuality < 0:
+        warnings.append("Warning: minMapQuality must be ≥ 0.")
+
+    # Output warnings
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
+
+
+
+
+@app.callback(
     [
         Output(id('name'), 'value'),
         Output(id('cores'), 'value'),
         Output(id('ram'), 'value'),
         Output(id('scratch'), 'value'),
-        Output(id('onlyCompGroupsHeatmap'), 'value'),
+        Output(id('refBuild'), 'value'),
+        Output(id('paired'), 'value'),
+        Output(id('strandMode'), 'value'),
+        Output(id('refFeatureFile'), 'value'),
+        Output(id('featureLevel'), 'value'),
+        Output(id('gtfFeatureType'), 'value'),
+        Output(id('allowMultiOverlap'), 'value'),
+        Output(id('countPrimaryAlignmentsOnly'), 'value'),
+        Output(id('minFeatureOverlap'), 'value'),
+        Output(id('minMapQuality'), 'value'),
+        Output(id('keepMultiHits'), 'value'),
+        Output(id('ignoreDup'), 'value'),
         Output(id('transcriptTypes'), 'value'),
-        Output(id('runGO'), 'value'),
-        Output(id('pValThreshGO'), 'value'),
-        Output(id('log2RatioThreshGO'), 'value'),
-        Output(id('fdrThreshORA'), 'value'),
-        Output(id('fdrThreshGSEA'), 'value'),
-        Output(id('Rversion'), 'value'),
     ],
     [Input('entity', 'data')],
     [State('app_data', 'data')]
 )
 def populate_default_values(entity_data, app_data):
-    name = entity_data.get("name", "Unknown") + "_DESeq2"
+    name = entity_data.get("name", "Unknown") + "_FeatureCounts"
     return (
         name,
-        4,
-        12,
+        8,
+        20,
+        10,
+        "Homo_sapiens/GENCODE/GRC",
+        True,
+        "antisense",
+        "genes.gtf",
+        "gene",
+        "exon",
+        True,
+        True,
+        10,
         10,
         True,
-        "protein_coding",
-        True,
-        0.01,
-        0,
-        0.05,
-        0.05,
-        "Dev/R/4.4.2"
+        False,
+        "protein_coding"
     )
-
 
 
 ######################################################################################################
@@ -497,14 +440,13 @@ def update_dataset(entity_data, dataset):
 ######################################################################################################
 ############################### STEP 3: Submit the Job! ##############################################
 ###################################################################################################### 
+
 @app.callback(
     [
         Output(id("alert-fade-success"), "is_open"),
         Output(id("alert-fade-fail"), "is_open"),
     ],
-    [
-        Input('Submit', "n_clicks"),
-    ],
+    [Input("Submit", "n_clicks")],
     [
         State(id('name'), 'value'),
         State(id('comment'), 'value'),
@@ -515,24 +457,21 @@ def update_dataset(entity_data, dataset):
         State(id('process_mode'), 'value'),
         State(id('samples'), 'value'),
         State(id('refBuild'), 'value'),
+        State(id('paired'), 'value'),
+        State(id('strandMode'), 'value'),
         State(id('refFeatureFile'), 'value'),
         State(id('featureLevel'), 'value'),
-        State(id('grouping'), 'value'),
-        State(id('sampleGroup'), 'value'),
-        State(id('refGroup'), 'value'),
-        State(id('onlyCompGroupsHeatmap'), 'value'),
-        State(id('grouping2'), 'value'),
-        State(id('backgroundExpression'), 'value'),
+        State(id('gtfFeatureType'), 'value'),
+        State(id('allowMultiOverlap'), 'value'),
+        State(id('countPrimaryAlignmentsOnly'), 'value'),
+        State(id('minFeatureOverlap'), 'value'),
+        State(id('minMapQuality'), 'value'),
+        State(id('keepMultiHits'), 'value'),
+        State(id('ignoreDup'), 'value'),
         State(id('transcriptTypes'), 'value'),
-        State(id('runGO'), 'value'),
-        State(id('pValThreshGO'), 'value'),
-        State(id('log2RatioThreshGO'), 'value'),
-        State(id('fdrThreshORA'), 'value'),
-        State(id('fdrThreshGSEA'), 'value'),
+        State(id('secondRef'), 'value'),
         State(id('specialOptions'), 'value'),
-        State(id('expressionName'), 'value'),
         State(id('mail'), 'value'),
-        State(id('Rversion'), 'value'),
         State(id("dataset"), "data"),
         State('datatable', 'selected_rows'),
         State('token_data', 'data'),
@@ -541,12 +480,11 @@ def update_dataset(entity_data, dataset):
     ],
     prevent_initial_call=True
 )
-def submit_deseq_job(
+def submit_featurecounts_job(
     n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
-    refBuild, refFeatureFile, featureLevel, grouping, sampleGroup, refGroup,
-    onlyCompGroupsHeatmap, grouping2, backgroundExpression, transcriptTypes,
-    runGO, pValThreshGO, log2RatioThreshGO, fdrThreshORA, fdrThreshGSEA,
-    specialOptions, expressionName, mail, Rversion,
+    refBuild, paired, strandMode, refFeatureFile, featureLevel, gtfFeatureType,
+    allowMultiOverlap, countPrimaryAlignmentsOnly, minFeatureOverlap, minMapQuality,
+    keepMultiHits, ignoreDup, transcriptTypes, secondRef, specialOptions, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
     try:
@@ -556,6 +494,8 @@ def submit_deseq_job(
         dataset_df.to_csv(dataset_path, sep="\t", index=False)
 
         param_dict = {
+            'name': name,
+            'comment': comment,
             'cores': cores,
             'ram': ram,
             'scratch': scratch,
@@ -563,26 +503,21 @@ def submit_deseq_job(
             'processMode': process_mode,
             'samples': samples,
             'refBuild': refBuild,
+            'paired': paired,
+            'strandMode': strandMode,
             'refFeatureFile': refFeatureFile,
             'featureLevel': featureLevel,
-            'grouping': grouping,
-            'sampleGroup': sampleGroup,
-            'refGroup': refGroup,
-            'onlyCompGroupsHeatmap': onlyCompGroupsHeatmap,
-            'grouping2': grouping2,
-            'backgroundExpression': backgroundExpression,
+            'gtfFeatureType': gtfFeatureType,
+            'allowMultiOverlap': allowMultiOverlap,
+            'countPrimaryAlignmentsOnly': countPrimaryAlignmentsOnly,
+            'minFeatureOverlap': minFeatureOverlap,
+            'minMapQuality': minMapQuality,
+            'keepMultiHits': keepMultiHits,
+            'ignoreDup': ignoreDup,
             'transcriptTypes': transcriptTypes,
-            'runGO': runGO,
-            'pValThreshGO': pValThreshGO,
-            'log2RatioThreshGO': log2RatioThreshGO,
-            'fdrThreshORA': fdrThreshORA,
-            'fdrThreshGSEA': fdrThreshGSEA,
+            'secondRef': secondRef,
             'specialOptions': specialOptions,
-            'expressionName': expressionName,
-            'mail': mail,
-            'Rversion': Rversion,
-            'name': name,
-            'comment': comment
+            'mail': mail
         }
 
         param_df = pd.DataFrame({"col1": list(param_dict.keys()), "col2": list(param_dict.values())})
@@ -595,7 +530,7 @@ def submit_deseq_job(
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
-            bundle exec sushi_fabric --class DESeq2 --dataset {dataset_path} --parameterset {param_path} --run \\
+            bundle exec sushi_fabric --class FeatureCounts --dataset {dataset_path} --parameterset {param_path} --run \\
             --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
