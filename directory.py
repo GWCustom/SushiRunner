@@ -26,10 +26,10 @@ DIRECTORY = {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
-        '377': {  # EdgeR_id
+        '377': {
             'layout': EdgeR.layout,
-            'sidebar': EdgeR.sidebar
+            'sidebar': EdgeR.sidebar,
+            'alerts': EdgeR.alerts
         }
-    }
+    } 
 }
-

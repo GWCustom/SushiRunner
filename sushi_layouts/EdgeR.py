@@ -29,7 +29,7 @@ import os
 ####################################################################################
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-title = 'FastqScreen'
+title = 'EdgeR'
 
 label_style = {
     "font-size": "0.85rem",   # Smaller text
@@ -40,141 +40,431 @@ label_style = {
 def id(name):
     return f"{title}_{name}"
 
-
-from dash import html, dcc
-import dash_bootstrap_components as dbc
-from bfabric_web_apps.utils.components import charge_switch
-from sushi_utils.component_utils import submitbutton_id
-
 # Component styles
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+# Sidebar layout for EdgeR with tooltips
 
-# Sidebar layout for EdgeR
-sidebar = dbc.Container(children=charge_switch + [
-    html.P("EdgeR App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+# Sidebar layout for EdgeR with tooltips (using existing IDs)
+sidebar = dbc.Container(
+    children=charge_switch + [
+        html.P(
+            "EdgeR App Generic Parameters:",
+            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
+        ),
 
-    html.Div([
-        dbc.Label("Name", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_name', value='0007072_EdgeR', type='text', style=component_styles)
-    ]),
+        html.Div([
+            dbc.Label("Name", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_name', value='', type='text', style=component_styles)
+        ]),
 
-    html.Div([
-        dbc.Label("Comment", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_comment', value='', type='text', style=component_styles)
-    ]),
+        html.Div([
+            dbc.Label("Comment", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
+        ]),
 
-    html.Div([
-        dbc.Label("Cores", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_cores', type='number', min=1, max=64, step=1, value=4, style=component_styles)
-    ]),
+        html.P(
+            "EdgeR App Specific Parameters:",
+            style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}
+        ),
 
-    html.Div([
-        dbc.Label("Param", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_param', value='employee', type='text', style=component_styles)
-    ]),
+        # Cores (no tooltip)
+        html.Div([
+            dbc.Label("Cores", style=label_style),
+            dbc.Select(
+                id=f'{title}_cores',
+                options=[{'label': str(x), 'value': x} for x in [1, 2, 4, 8]],
+                style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Process Mode", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_processMode', value='', type='text', style=component_styles)
-    ]),
+        # RAM (no tooltip)
+        html.Div([
+            dbc.Label("RAM", style=label_style),
+            dbc.Select(
+                id=f'{title}_ram',
+                options=[{'label': str(x), 'value': x} for x in [15, 32, 64]],
+                style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Samples", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_samples', value='', type='text', style=component_styles)
-    ]),
+        # Scratch (no tooltip)
+        html.Div([
+            dbc.Label("Scratch", style=label_style),
+            dbc.Select(
+                id=f'{title}_scratch',
+                options=[{'label': str(x), 'value': x} for x in [10, 50, 100]],
+                style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Reduce", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_reduce', value='', type='text', style=component_styles)
-    ]),
+        # Partition (no tooltip)
+        html.Div([
+            dbc.Label("Partition", style=label_style),
+            dbc.Select(
+                id=f'{title}_partition',
+                options=[{'label': x, 'value': x} for x in ['employee', 'manyjobs', 'user']],
+                style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Feature Level", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_featureLevel', options=[{"label": opt, "value": opt} for opt in ["Gene", "Isoform"]], value="Gene", style=component_styles)
-    ]),
+        # Process Mode (no tooltip)
+        html.Div([
+            dbc.Label("Process Mode", style=label_style),
+            dbc.Select(
+                id=f'{title}_process_mode',
+                options=[{'label': x, 'value': x} for x in ['DATASET']],
+                style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Test Method", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_testMethod', options=[{"label": opt, "value": opt} for opt in ["glm", "exactTest"]], value="glm", style=component_styles)
-    ]),
+        # Samples (no tooltip)
+        html.Div([
+            dbc.Label("Samples", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_samples', value='', type='text', style=component_styles)
+        ]),
 
-    html.Div([
-        dbc.Label("Run GO Analysis", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_runGo', options=[{"label": str(opt), "value": opt} for opt in [True, False]], value=True, style=component_styles)
-    ]),
+        # refBuild (no tooltip)
+        html.Div([
+            dbc.Label("refBuild", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_refBuild', value='', type='text', style=component_styles)
+        ]),
 
-    html.Div([
-        dbc.Label("Grouping", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_grouping', options=[{"label": opt, "value": opt} for opt in ["condition"]], value="condition", style=component_styles)
-    ]),
+        # refFeatureFile (no tooltip)
+        html.Div([
+            dbc.Label("refFeatureFile", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_refFeatureFile', value='', type='text', style=component_styles)
+        ]),
 
-    html.Div([
-        dbc.Label("Sample Group", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_sampleGroup', options=[{"label": opt, "value": opt} for opt in ["Controls", "Hetero", "Homo"]], value="Controls", style=component_styles)
-    ]),
+        # Feature Level (no tooltip)
+        html.Div([
+            dbc.Label("Feature Level", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_featureLevel',
+                options=[{"label": "Gene", "value": "Gene"}, {"label": "Isoform", "value": "Isoform"}],
+                value="Gene",
+                style=component_styles
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Sample Group Baseline", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_sampleGroupBaseline', options=[{"label": opt, "value": opt} for opt in ["Controls", "Hetero", "Homo"]], value="Controls", style=component_styles)
-    ]),
+        # Test Method (no tooltip)
+        html.Div([
+            dbc.Label("Test Method", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_testMethod',
+                options=[{"label": "glm", "value": "glm"}, {"label": "exactTest", "value": "exactTest"}],
+                value="glm",
+                style=component_styles
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Reference Group", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_refGroup', options=[{"label": opt, "value": opt} for opt in ["Controls", "Hetero", "Homo"]], value="Controls", style=component_styles)
-    ]),
+        # deTest with tooltip (target is the same as the select component's id)
+        html.Div([
+            dbc.Label("deTest", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_deTest',
+                options=[{"label": "QL", "value": "QL"}],
+                value="QL",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "This option only works for glm method. Quasi-likelihood (QL) F-test or likelihood ratio (LR) test. LR is preferred for single-cell data.",
+                target=f'{title}_deTest',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Reference Group Baseline", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_refGroupBaseline', options=[{"label": opt, "value": opt} for opt in ["Controls", "Hetero", "Homo"]], value="Controls", style=component_styles)
-    ]),
+        # Grouping with tooltip
+        html.Div([
+            dbc.Label("Grouping", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_grouping',
+                options=[{"label": "condition", "value": "condition"}],
+                value="condition",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "required",
+                target=f'{title}_grouping',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Only Comparison Groups in Heatmap", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_onlyCompGroupsHeatmap', options=[{"label": str(opt), "value": opt} for opt in [True, False]], value=True, style=component_styles)
-    ]),
+        # Sample Group with tooltip
+        html.Div([
+            dbc.Label("Sample Group", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_sampleGroup',
+                options=[
+                    {"label": "Controls", "value": "Controls"},
+                    {"label": "Hetero", "value": "Hetero"},
+                    {"label": "Homo", "value": "Homo"}
+                ],
+                value="Hetero",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "required. sampleGroup should be different from refGroup",
+                target=f'{title}_sampleGroup',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Normalization Method", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_normMethod', options=[{"label": opt, "value": opt} for opt in ["TMM", "RLE", "upperQuartile", "None"]], value="TMM", style=component_styles)
-    ]),
+        # Sample Group Baseline with tooltip
+        html.Div([
+            dbc.Label("Sample Group Baseline", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_sampleGroupBaseline',
+                options=[
+                    {"label": "Controls", "value": "Controls"},
+                    {"label": "Hetero", "value": "Hetero"},
+                    {"label": "Homo", "value": "Homo"}
+                ],
+                value="Controls",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "select the baseline for sampleGroup if you have",
+                target=f'{title}_sampleGroupBaseline',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("p-value High Threshold", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_pValueHighThreshold', value=0.05, type='number', style=component_styles)
-    ]),
+        # Reference Group with tooltip
+        html.Div([
+            dbc.Label("Reference Group", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_refGroup',
+                options=[
+                    {"label": "Controls", "value": "Controls"},
+                    {"label": "Hetero", "value": "Hetero"},
+                    {"label": "Homo", "value": "Homo"}
+                ],
+                value="Controls",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "required. refGroup should be different from sampleGroup",
+                target=f'{title}_refGroup',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("p-value Cut-off", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_pvalCut', value=0.05, type='number', style=component_styles)
-    ]),
+        # Reference Group Baseline with tooltip
+        html.Div([
+            dbc.Label("Reference Group Baseline", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_refGroupBaseline',
+                options=[
+                    {"label": "Controls", "value": "Controls"},
+                    {"label": "Hetero", "value": "Hetero"},
+                    {"label": "Homo", "value": "Homo"}
+                ],
+                value="Hetero",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "select the baseline for refGroup if you have",
+                target=f'{title}_refGroupBaseline',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Log2 Fold-Change Threshold", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_log2FoldChangeThreshold', value=1.0, type='number', style=component_styles)
-    ]),
+        # Only Comparison Groups in Heatmap with tooltip
+        html.Div([
+            dbc.Label("Only Comparison Groups in Heatmap", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_onlyCompGroupsHeatmap',
+                options=[
+                    {"label": "True", "value": True},
+                    {"label": "False", "value": False}
+                ],
+                value=True,
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "only show the samples from comparison groups in heatmap",
+                target=f'{title}_onlyCompGroupsHeatmap',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Top N Tags", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_topNtag', value=20, type='number', style=component_styles)
-    ]),
+        # Normalization Method with tooltip
+        html.Div([
+            dbc.Label("Normalization Method", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_normMethod',
+                options=[
+                    {"label": "TTM", "value": "TTM"},
+                    {"label": "RLE", "value": "RLE"},
+                    {"label": "upperQuartile", "value": "upperQuartile"},
+                    {"label": "None", "value": "None"}
+                ],
+                value="TTM",
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "see http://bioconductor.org/packages/edgeR/",
+                target=f'{title}_normMethod',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("FDR Threshold for NSEA", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_fdrThresholdForNSEA', value=0.05, type='number', style=component_styles)
-    ]),
+        # grouping2 with tooltip
+        html.Div([
+            dbc.Label("grouping2", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_grouping2', value='', type='text', style=component_styles),
+            dbc.Tooltip(
+                "specify the column name of your secondary co-variate (factor or numeric, assuming there is one). Ensure the column name is in the format 'NAME [Factor]' or 'NAME [Numeric]'",
+                target=f'{title}_grouping2',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("Sparse Log Normalization", style={"font-size": "0.85rem"}),
-        dbc.Input(id='EdgeR_sparselogNorm', value='', type='text', style=component_styles)
-    ]),
+        # backgroundExpression with tooltip
+        html.Div([
+            dbc.Label("backgroundExpression", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_backgroundExpression', value='', type='text', style=component_styles),
+            dbc.Tooltip(
+                "counts to be added to shrink estimated log2 ratios",
+                target=f'{title}_backgroundExpression',
+                placement="right"
+            )
+        ]),
 
-    html.Div([
-        dbc.Label("R Version", style={"font-size": "0.85rem"}),
-        dbc.Select(id='EdgeR_Rversion', options=[{"label": "Dev/R/4.4.2", "value": "Dev/R/4.4.2"}], value="Dev/R/4.4.2", style=component_styles)
-    ]),
+        # transcriptTypes (no tooltip)
+        html.Div([
+            dbc.Label("transcriptTypes", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_transcriptTypes',
+                options=[
+                    {"label": "Controls", "value": "Controls"},
+                    {"label": "Hetero", "value": "Hetero"},
+                    {"label": "Homo", "value": "Homo"}
+                ],
+                value="Controls",
+                style=component_styles
+            )
+        ]),
 
-    dbc.Button("Submit", id=submitbutton_id('EdgeR_submit1'), n_clicks=0, style={"margin-top": "18px"})
-], style={"max-height": "62vh", "overflow-y": "auto", "overflow-x": "hidden"})
+        # pValuesHighlightThresh with tooltip
+        html.Div([
+            dbc.Label("pValuesHighlightThresh", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_pValuesHighlightThresh', value=0.01, type='number', style=component_styles),
+            dbc.Tooltip(
+                "pValue cut-off for highlighting candidate features in plots",
+                target=f'{title}_pValuesHighlightThresh',
+                placement="right"
+            )
+        ]),
+
+        # log2RatioHighlightThresh (pvalCut) with tooltip
+        html.Div([
+            dbc.Label("log2RatioHighlightThresh", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_pvalCut', value=0.05, type='number', style=component_styles),
+            dbc.Tooltip(
+                "log2 FoldChange cut-off for highlighting candidate features in plots",
+                target=f'{title}_pvalCut',
+                placement="right"
+            )
+        ]),
+
+        # runGO with tooltip
+        html.Div([
+            dbc.Label("runGO", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_runGO',
+                options=[{"label": "True", "value": True}, {"label": "False", "value": False}],
+                value=True,
+                style=component_styles
+            ),
+            dbc.Tooltip(
+                "perform ORA and GSEA test with Gene Ontology annotations",
+                target=f'{title}_runGO',
+                placement="right"
+            )
+        ]),
+
+        # pValTreshGo with tooltip
+        html.Div([
+            dbc.Label("pValTreshGo", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_pValTreshGo', value=0.01, type='number', style=component_styles),
+            dbc.Tooltip(
+                "pValue cut-off for ORA candidate gene selection",
+                target=f'{title}_pValTreshGo',
+                placement="right"
+            )
+        ]),
+
+        # log2RatioTreshGo with tooltip
+        html.Div([
+            dbc.Label("log2RatioTreshGo", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_log2RatioTreshGo', value=0, type='number', style=component_styles),
+            dbc.Tooltip(
+                "log2 FoldChange cut-off for ORA candidate gene selection",
+                target=f'{title}_log2RatioTreshGo',
+                placement="right"
+            )
+        ]),
+
+        # FDR Threshold for ORA with tooltip
+        html.Div([
+            dbc.Label("FDR Threshold for ORA", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_fdrThresholdForORA', value=0.05, type='number', style=component_styles),
+            dbc.Tooltip(
+                "adjusted pValue cut-off for GO terms in ORA",
+                target=f'{title}_fdrThresholdForORA',
+                placement="right"
+            )
+        ]),
+
+        # FDR Threshold for GSEA with tooltip
+        html.Div([
+            dbc.Label("FDR Threshold for GSEA", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_fdrThresholdForGSEA', value=0.05, type='number', style=component_styles),
+            dbc.Tooltip(
+                "adjusted pValue cut-off for GO terms in GSEA",
+                target=f'{title}_fdrThresholdForGSEA',
+                placement="right"
+            )
+        ]),
+
+        # specialOptions (no tooltip)
+        html.Div([
+            dbc.Label("specialOptions", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_specialOptions', value='', type='text', style=component_styles)
+        ]),
+
+        # expressionName (no tooltip)
+        html.Div([
+            dbc.Label("expressionName", style={"font-size": "0.85rem"}),
+            dbc.Input(id=f'{title}_expressionName', value='', type='text', style=component_styles)
+        ]),
+
+        # Mail (no tooltip)
+        html.Div([
+            dbc.Label("Mail", style=label_style),
+            dbc.Input(
+                id=f'{title}_mail',
+                value='',
+                type='email',
+                style={"margin-bottom": "18px", "borderBottom": "1px solid lightgrey"}
+            )
+        ]),
+
+        # R Version (no tooltip)
+        html.Div([
+            dbc.Label("R Version", style={"font-size": "0.85rem"}),
+            dbc.Select(
+                id=f'{title}_Rversion',
+                options=[{"label": "Dev/R/4.4.2", "value": "Dev/R/4.4.2"}],
+                value="Dev/R/4.4.2",
+                style=component_styles
+            )
+        ]),
+
+    dbc.Button("Submit", id=submitbutton_id(f'{title}_submit1'), n_clicks=0, style={"margin-top": "18px", 'borderBottom': '1px solid lightgrey'})
+], style={"max-height":"62vh", "overflow-y":"auto", "overflow-x":"hidden"})
+
 
 
 
@@ -193,12 +483,74 @@ alerts = html.Div(
     [
         dbc.Alert("Success: Job Submitted!", color="success", id=id("alert-fade-success"), dismissable=True, is_open=False),
         dbc.Alert("Error: Job Submission Failed!", color="danger", id=id("alert-fade-fail"), dismissable=True, is_open=False),
+        dbc.Alert("", color="warning", id=id("alert-warning"), dismissable=True, is_open=False)
     ],
     style={"margin": "20px"}
 )
+
+
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
+
+
+import re  # for grouping2 format check
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(f"{title}_sampleGroup", "value"),
+        Input(f"{title}_sampleGroupBaseline", "value"),
+        Input(f"{title}_refGroup", "value"),
+        Input(f"{title}_refGroupBaseline", "value"),
+        Input(f"{title}_grouping2", "value")
+    ]
+)
+def check_warnings(sampleGroup, sampleGroupBaseline, refGroup, refGroupBaseline, grouping2):
+    warnings = []
+    # Check sampleGroup and refGroup; they should be different.
+    if sampleGroup == refGroup:
+        warnings.append("Warning: sampleGroup should be different from refGroup.")
+    # Warning if baseline fields are empty (optional, per your spec).
+    if not sampleGroupBaseline:
+        warnings.append("Warning: Please select a baseline for sampleGroup if you have one.")
+    if not refGroupBaseline:
+        warnings.append("Warning: Please select a baseline for refGroup if you have one.")
+    # Check grouping2 format (only if grouping2 is provided)
+    if grouping2:
+        # This regex requires at least one character, then a space (optional) and then "[Factor]" or "[Numeric]"
+        pattern = r".+\s*\[(Factor|Numeric)\]$"
+        if not re.match(pattern, grouping2):
+            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
+    
+    if warnings:
+        # Return the warning messages as a list of <div> components, and set is_open to True.
+        return [html.Div(w) for w in warnings], True
+    else:
+        return "", False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -263,31 +615,23 @@ def callback(data, sidebar):
 ##### C. Now we populate components with default values (Step 1: Get data from the user) #####
 ##############################################################################################
 
-# Adjusted populate_default_values callback
 @app.callback(
     [
-        Output('EdgeR_name', 'value'),
-        Output('EdgeR_comment', 'value'),
-        Output('EdgeR_cores', 'value'),
-        Output('EdgeR_param', 'value'),
-        Output('EdgeR_processMode', 'value'),
-        Output('EdgeR_featureLevel', 'value'),
-        Output('EdgeR_testMethod', 'value'),
-        Output('EdgeR_runGo', 'value'),
-        Output('EdgeR_grouping', 'value'),
-        Output('EdgeR_sampleGroup', 'value'),
-        Output('EdgeR_sampleGroupBaseline', 'value'),
-        Output('EdgeR_refGroup', 'value'),
-        Output('EdgeR_refGroupBaseline', 'value'),
-        Output('EdgeR_onlyCompGroupsHeatmap', 'value'),
-        Output('EdgeR_normMethod', 'value'),
-        Output('EdgeR_pValueHighThreshold', 'value'),
-        Output('EdgeR_pvalCut', 'value'),
-        Output('EdgeR_log2FoldChangeThreshold', 'value'),
-        Output('EdgeR_topNtag', 'value'),
-        Output('EdgeR_fdrThresholdForNSEA', 'value'),
-        Output('EdgeR_sparselogNorm', 'value'),
-        Output('EdgeR_Rversion', 'value')
+        Output(id('name'), 'value'),
+        Output(id('cores'), 'value'),
+        Output(id('ram'), 'value'),
+        Output(id('scratch'), 'value'),
+        Output(id('onlyCompGroupsHeatmap'), 'value'),
+        Output(id('normMethod'), 'value'),
+        Output(id('transcriptTypes'), 'value'),
+        Output(id('pValuesHighlightThresh'), 'value'),
+        Output(id('pvalCut'), 'value'),
+        Output(id('runGO'), 'value'),
+        Output(id('pValTreshGo'), 'value'),
+        Output(id('log2RatioTreshGo'), 'value'),
+        Output(id('fdrThresholdForORA'), 'value'),
+        Output(id('fdrThresholdForGSEA'), 'value'),
+        Output(id('Rversion'), 'value')
     ],
     [Input("entity", "data")],
     [State("app_data", "data")]
@@ -295,10 +639,23 @@ def callback(data, sidebar):
 def populate_default_values(entity_data, app_data):
     name = entity_data.get("name", "Unknown") + "_EdgeR"
     return (
-        name, "", 4, "employee", "", "Gene", "glm", True, "condition", 
-        "Controls", "Controls", "Controls", "Controls", True, "TMM", 
-        0.05, 0.05, 1.0, 20, 0.05, "", "Dev/R/4.4.2"
+        name,                      # EdgeR_name
+        4,                         # EdgeR_cores
+        15,                        # EdgeR_ram (default: first option from [15,32,64])
+        10,                        # EdgeR_scratch (default: first option from [10,50,100])
+        True,                      # EdgeR_onlyCompGroupsHeatmap
+        "TTM",                     # EdgeR_normMethod (note: changed from TMM to TTM)
+        "Controls",                # EdgeR_transcriptTypes
+        0.01,                      # EdgeR_pValuesHighlightThresh
+        0.05,                      # EdgeR_pvalCut (this corresponds to the log2 ratio highlight threshold)
+        True,                      # EdgeR_runGO
+        0.01,                      # EdgeR_pValTreshGo
+        0,                         # EdgeR_log2RatioTreshGo
+        0.05,                      # EdgeR_fdrThresholdForORA
+        0.05,                      # EdgeR_fdrThresholdForGSEA
+        "Dev/R/4.4.2"              # EdgeR_Rversion
     )
+
 
 ######################################################################################################
 ####################### STEP 2: Get data from B-Fabric! ##############################################
@@ -322,34 +679,51 @@ def update_dataset(entity_data, dataset):
 ######################################################################################################
 ############################### STEP 3: Submit the Job! ##############################################
 ###################################################################################################### 
-# Adjusted submit_edger_job callback
 @app.callback(
-    [Output('EdgeR_alert-fade-success', 'is_open'), Output('EdgeR_alert-fade-fail', 'is_open')],
-    [Input(submitbutton_id('EdgeR_submit1'), 'n_clicks')],
     [
-        State('EdgeR_name', 'value'),
-        State('EdgeR_comment', 'value'),
-        State('EdgeR_cores', 'value'),
-        State('EdgeR_param', 'value'),
-        State('EdgeR_processMode', 'value'),
-        State('EdgeR_featureLevel', 'value'),
-        State('EdgeR_testMethod', 'value'),
-        State('EdgeR_runGo', 'value'),
-        State('EdgeR_grouping', 'value'),
-        State('EdgeR_sampleGroup', 'value'),
-        State('EdgeR_sampleGroupBaseline', 'value'),
-        State('EdgeR_refGroup', 'value'),
-        State('EdgeR_refGroupBaseline', 'value'),
-        State('EdgeR_onlyCompGroupsHeatmap', 'value'),
-        State('EdgeR_normMethod', 'value'),
-        State('EdgeR_pValueHighThreshold', 'value'),
-        State('EdgeR_pvalCut', 'value'),
-        State('EdgeR_log2FoldChangeThreshold', 'value'),
-        State('EdgeR_topNtag', 'value'),
-        State('EdgeR_fdrThresholdForNSEA', 'value'),
-        State('EdgeR_sparselogNorm', 'value'),
-        State('EdgeR_Rversion', 'value'),
-        State('FastqScreen_dataset', 'data'),
+        Output(id("alert-fade-success"), "is_open"),
+        Output(id("alert-fade-fail"), "is_open"),
+    ],
+    [
+        Input("Submit", "n_clicks"),
+    ],
+
+    [
+        State(id('name'), 'value'),
+        State(id('comment'), 'value'),
+        State(id('cores'), 'value'),
+        State(id('ram'), 'value'),
+        State(id('scratch'), 'value'),
+        State(id('partition'), 'value'),
+        State(id('process_mode'), 'value'),
+        State(id('samples'), 'value'),
+        State(id('refBuild'), 'value'),
+        State(id('refFeatureFile'), 'value'),
+        State(id('featureLevel'), 'value'),
+        State(id('testMethod'), 'value'),
+        State(id('deTest'), 'value'),
+        State(id('grouping'), 'value'),
+        State(id('sampleGroup'), 'value'),
+        State(id('sampleGroupBaseline'), 'value'),
+        State(id('refGroup'), 'value'),
+        State(id('refGroupBaseline'), 'value'),
+        State(id('onlyCompGroupsHeatmap'), 'value'),
+        State(id('normMethod'), 'value'),
+        State(id('grouping2'), 'value'),
+        State(id('backgroundExpression'), 'value'),
+        State(id('transcriptTypes'), 'value'),
+        State(id('pValuesHighlightThresh'), 'value'),
+        State(id('pvalCut'), 'value'),
+        State(id('runGO'), 'value'),
+        State(id('pValTreshGo'), 'value'),
+        State(id('log2RatioTreshGo'), 'value'),
+        State(id('fdrThresholdForORA'), 'value'),
+        State(id('fdrThresholdForGSEA'), 'value'),
+        State(id('specialOptions'), 'value'),
+        State(id('expressionName'), 'value'),
+        State(id('mail'), 'value'),
+        State(id('Rversion'), 'value'),
+        State(id("dataset"), "data"),
         State('datatable', 'selected_rows'),
         State('token_data', 'data'),
         State('entity', 'data'),
@@ -358,24 +732,36 @@ def update_dataset(entity_data, dataset):
     prevent_initial_call=True
 )
 def submit_edger_job(
-    n_clicks, name, comment, cores, param, processMode, featureLevel, testMethod, runGo, grouping,
-    sampleGroup, sampleGroupBaseline, refGroup, refGroupBaseline, onlyCompGroupsHeatmap, normMethod,
-    pValueHighThreshold, pvalCut, log2FoldChangeThreshold, topNtag, fdrThresholdForNSEA,
-    sparselogNorm, Rversion, dataset, selected_rows, token_data, entity_data, app_data
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
+    refBuild, refFeatureFile, featureLevel, testMethod, deTest, grouping, sampleGroup,
+    sampleGroupBaseline, refGroup, refGroupBaseline, onlyCompGroupsHeatmap, normMethod,
+    grouping2, backgroundExpression, transcriptTypes, pValuesHighlightThresh, pvalCut,
+    runGO, pValTreshGo, log2RatioTreshGo, fdrThresholdForORA, fdrThresholdForGSEA,
+    specialOptions, expressionName, mail, Rversion,
+    dataset, selected_rows, token_data, entity_data, app_data
 ):
+    
+    print(12)
     try:
+        # Create the dataset file from the full API response
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"
         os.makedirs(os.path.dirname(dataset_path), exist_ok=True)
         dataset_df.to_csv(dataset_path, sep="\t", index=False)
 
+        # Build the parameter dictionary from the sidebar values
         param_dict = {
             'cores': cores,
-            'param': param,
-            'processMode': processMode,
+            'ram': ram,
+            'scratch': scratch,
+            'partition': partition,
+            'processMode': process_mode,
+            'samples': samples,
+            'refBuild': refBuild,
+            'refFeatureFile': refFeatureFile,
             'featureLevel': featureLevel,
             'testMethod': testMethod,
-            'runGo': runGo,
+            'deTest': deTest,
             'grouping': grouping,
             'sampleGroup': sampleGroup,
             'sampleGroupBaseline': sampleGroupBaseline,
@@ -383,33 +769,39 @@ def submit_edger_job(
             'refGroupBaseline': refGroupBaseline,
             'onlyCompGroupsHeatmap': onlyCompGroupsHeatmap,
             'normMethod': normMethod,
-            'pValueHighThreshold': pValueHighThreshold,
+            'grouping2': grouping2,
+            'backgroundExpression': backgroundExpression,
+            'transcriptTypes': transcriptTypes,
+            'pValuesHighlightThresh': pValuesHighlightThresh,
             'pvalCut': pvalCut,
-            'log2FoldChangeThreshold': log2FoldChangeThreshold,
-            'topNtag': topNtag,
-            'fdrThresholdForNSEA': fdrThresholdForNSEA,
-            'sparselogNorm': sparselogNorm,
+            'runGO': runGO,
+            'pValTreshGo': pValTreshGo,
+            'log2RatioTreshGo': log2RatioTreshGo,
+            'fdrThresholdForORA': fdrThresholdForORA,
+            'fdrThresholdForGSEA': fdrThresholdForGSEA,
+            'specialOptions': specialOptions,
+            'expressionName': expressionName,
+            'mail': mail,
             'Rversion': Rversion,
             'name': name,
             'comment': comment
         }
 
+        # Write parameters to a TSV file
         param_df = pd.DataFrame({"col1": list(param_dict.keys()), "col2": list(param_dict.values())})
         param_path = f"{SCRATCH_PATH}/{name}/parameters.tsv"
         os.makedirs(os.path.dirname(param_path), exist_ok=True)
         param_df.to_csv(param_path, sep="\t", index=False, header=False)
 
+        # Build the bash command for job submission
         app_id = app_data.get("id", "")
         project_id = "2220"
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
-
         bash_command = f"""
-            bundle exec sushi_fabric --class EdgeR --dataset \
-            {dataset_path} --parameterset {param_path} --run \
-            --input_dataset_application {app_id} --project {project_id} \
-            --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
-            --next_dataset_name {name}
+            bundle exec sushi_fabric --class EdgeR --dataset {dataset_path} --parameterset {param_path} --run \\
+            --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
+            --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
         print("[SUSHI BASH COMMAND]:", bash_command)
         return True, False

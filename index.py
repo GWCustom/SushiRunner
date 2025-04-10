@@ -142,8 +142,8 @@ def update_user_display(token_data, entity_data, app_data):
     else:
         return html.P("Please log in."), [], [], []
 
+bfabric_web_apps.DEBUG = True
 
 # Here we run the app on the specified host and port.
 if __name__ == "__main__":
     app.run(debug=bfabric_web_apps.DEBUG, port=bfabric_web_apps.PORT, host=bfabric_web_apps.HOST)
-
