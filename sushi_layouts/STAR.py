@@ -46,7 +46,6 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 # STAR Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("STAR App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -58,7 +57,7 @@ sidebar = dbc.Container(
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
 
-        html.P("STAR App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("STAR App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -67,13 +66,13 @@ sidebar = dbc.Container(
                 options=[{'label': str(x), 'value': x} for x in [1, 2, 4, 8]],
                 value=8,
                 style=component_styles
-            ),
-            dbc.Tooltip("30/40 GB is enough for human and mouse data, 60 GB for a hybrid genome. Only use the 200GB option for very large genomes (e.g. plants)", target=f'{title}_cores', placement="right")
+            )
         ]),
 
         html.Div([
             dbc.Label("RAM", style=label_style),
-            dbc.Input(id=f'{title}_ram', value=30, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_ram', value=30, type='number', style=component_styles),
+            dbc.Tooltip("30/40 GB is enough for human and mouse data, 60 GB for a hybrid genome. Only use the 200GB option for very large genomes (e.g. plants)", target=f'{title}_ram', placement="right")
         ]),
 
         html.Div([
@@ -109,7 +108,7 @@ sidebar = dbc.Container(
         html.Div([
             dbc.Label("refBuild", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_refBuild', value='', type='text', style=component_styles),
-            dbc.Tooltip("Select the reference genome you wish to map your reads to. Use the most recent version", target=f'{title}_refBuild', placement="right")
+            dbc.Tooltip("required! Select the reference genome you wish to map your reads to. Use the most recent version", target=f'{title}_refBuild', placement="right")
         ]),
 
         html.Div([
@@ -120,7 +119,7 @@ sidebar = dbc.Container(
                 value=True,
                 style=component_styles
             ),
-            dbc.Tooltip("If this is not autopopulated, check which sequencing config was used to determine. If you only have R1, set to false. If you have R1 and R2, set to true.", target=f'{title}_paired', placement="right")
+            dbc.Tooltip("required! If this is not autopopulated, check which sequencing config was used to determine. If you only have R1, set to false. If you have R1 and R2, set to true.", target=f'{title}_paired', placement="right")
         ]),
 
         html.Div([
@@ -131,7 +130,7 @@ sidebar = dbc.Container(
                 value="both",
                 style=component_styles
             ),
-            dbc.Tooltip("If this is not autopopulated, check which library kit was used to determine. If you are unsure, ask your coach.", target=f'{title}_strandMode', placement="right")
+            dbc.Tooltip("required! If this is not autopopulated, check which library kit was used to determine. If you are unsure, ask your coach.", target=f'{title}_strandMode', placement="right")
         ]),
 
         html.Div([
@@ -186,13 +185,13 @@ sidebar = dbc.Container(
         html.Div([
             dbc.Label("trim_front1", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_trim_front1', value=0, type='number', style=component_styles),
-            dbc.Tooltip("trimming how many bases in front for read1 (and read2), default is 0.", target=f'{title}_trim_front1', placement="right")
+            dbc.Tooltip("Trimming how many bases in front for read1 (and read2), default is 0.", target=f'{title}_trim_front1', placement="right")
         ]),
 
         html.Div([
             dbc.Label("trim_tail1", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_trim_tail1', value=0, type='number', style=component_styles),
-            dbc.Tooltip("trimming how many bases in tail for read1 (and read2), default is 0.", target=f'{title}_trim_tail1', placement="right")
+            dbc.Tooltip("Trimming how many bases in tail for read1 (and read2), default is 0.", target=f'{title}_trim_tail1', placement="right")
         ]),
 
         html.Div([
@@ -203,18 +202,21 @@ sidebar = dbc.Container(
                 value=False,
                 style=component_styles
             ),
-            dbc.Tooltip("move a sliding window from front (5p) to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.", target=f'{title}_cut_front', placement="right")
+            dbc.Tooltip("Move a sliding window from front (5p) to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.", target=f'{title}_cut_front', placement="right")
         ]),
 
-        # Additional fastp settings
         html.Div([
             dbc.Label("cut_front_window_size", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_front_window_size', value=4, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_front_window_size', value=4, type='number', style=component_styles),
+            dbc.Tooltip("Size of the window used by cut_front.", target=f'{title}_cut_front_window_size', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_front_mean_quality", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_front_mean_quality', value=20, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_front_mean_quality', value=20, type='number', style=component_styles),
+            dbc.Tooltip("Quality threshold for bases to be dropped by cut_front.", target=f'{title}_cut_front_mean_quality', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_tail", style={"font-size": "0.85rem"}),
             dbc.Select(
@@ -223,16 +225,21 @@ sidebar = dbc.Container(
                 value=False,
                 style=component_styles
             ),
-            dbc.Tooltip("move a sliding window from tail (3p) to front, drop the bases in the window if mean quality < threshold, stop otherwise.", target=f'{title}_cut_tail', placement="right")
+            dbc.Tooltip("Move a sliding window from tail (3p) to front, drop the bases in the window if mean quality < threshold, stop otherwise.", target=f'{title}_cut_tail', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_tail_window_size", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_tail_window_size', value=4, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_tail_window_size', value=4, type='number', style=component_styles),
+            dbc.Tooltip("Size of the window used by cut_tail.", target=f'{title}_cut_tail_window_size', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_tail_mean_quality", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_tail_mean_quality', value=20, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_tail_mean_quality', value=20, type='number', style=component_styles),
+            dbc.Tooltip("Quality threshold for bases to be dropped by cut_tail.", target=f'{title}_cut_tail_mean_quality', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_right", style={"font-size": "0.85rem"}),
             dbc.Select(
@@ -241,41 +248,56 @@ sidebar = dbc.Container(
                 value=False,
                 style=component_styles
             ),
-            dbc.Tooltip("move from window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop.", target=f'{title}_cut_right', placement="right")
+            dbc.Tooltip("Move one window from front to tail, if one window has mean quality < threshold, drop the bases in that window and everything to the right.", target=f'{title}_cut_right', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_right_window_size", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_right_window_size', value=4, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_right_window_size', value=4, type='number', style=component_styles),
+            dbc.Tooltip("Size of the window used by cut_right.", target=f'{title}_cut_right_window_size', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cut_right_mean_quality", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_cut_right_mean_quality', value=20, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_cut_right_mean_quality', value=20, type='number', style=component_styles),
+            dbc.Tooltip("Quality threshold for bases to be dropped by cut_right.", target=f'{title}_cut_right_mean_quality', placement="right")
         ]),
+
         html.Div([
             dbc.Label("average_qual", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_average_qual', value=0, type='number', style=component_styles),
-            dbc.Tooltip("if one read average quality score , then this read/pair is discarded. Default 0 means no requirement", target=f'{title}_average_qual', placement="right")
+            dbc.Tooltip("If one read average quality score < this, then this read/pair is discarded. Default 0 means no requirement.", target=f'{title}_average_qual', placement="right")
         ]),
+
         html.Div([
             dbc.Label("max_len1", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_max_len1', value=0, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_max_len1', value=0, type='number', style=component_styles),
+            dbc.Tooltip("If read1 is longer than max_len1, then trim read1 at its tail to make it as long as max_len1. Default 0 means no limitation.", target=f'{title}_max_len1', placement="right")
         ]),
+
         html.Div([
             dbc.Label("max_len2", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_max_len2', value=0, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_max_len2', value=0, type='number', style=component_styles),
+            dbc.Tooltip("If read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If two reads are present, the same will apply to read2.", target=f'{title}_max_len2', placement="right")
         ]),
+
         html.Div([
             dbc.Label("poly_x_min_len", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_poly_x_min_len', value=10, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_poly_x_min_len', value=10, type='number', style=component_styles),
+            dbc.Tooltip("The minimum length to detect polyX in the read tail. 10 by default.", target=f'{title}_poly_x_min_len', placement="right")
         ]),
+
         html.Div([
             dbc.Label("length_required", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_length_required', value=18, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_length_required', value=18, type='number', style=component_styles),
+            dbc.Tooltip("Reads shorter than length_required will be discarded.", target=f'{title}_length_required', placement="right")
         ]),
+
         html.Div([
             dbc.Label("cmdOptionsFastp", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_cmdOptionsFastp', value='', type='text', style=component_styles)
         ]),
+
 
         html.P("UMI tools:", style={"font-weight": "bold", "font-size": "1rem", "margin-top": "20px"}),
 
@@ -339,84 +361,6 @@ alerts = html.Div(
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("refBuild"), "value"),
-        Input(id("paired"), "value"),
-        Input(id("strandMode"), "value"),
-
-        Input(id("trim_front1"), "value"),
-        Input(id("trim_tail1"), "value"),
-        Input(id("cut_front_window_size"), "value"),
-        Input(id("cut_tail_window_size"), "value"),
-        Input(id("cut_right_window_size"), "value"),
-
-        Input(id("cut_front_mean_quality"), "value"),
-        Input(id("cut_tail_mean_quality"), "value"),
-        Input(id("cut_right_mean_quality"), "value"),
-
-        Input(id("average_qual"), "value"),
-        Input(id("length_required"), "value"),
-        Input(id("max_len1"), "value"),
-        Input(id("max_len2"), "value"),
-        Input(id("poly_x_min_len"), "value"),
-    ]
-)
-def check_star_warnings(refBuild, paired, strandMode,
-                        trim_front1, trim_tail, cut_front_ws, cut_tail_ws, cut_right_ws,
-                        cut_front_q, cut_tail_q, cut_right_q,
-                        avg_qual, length_required, max_len1, max_len2, poly_x_min_len):
-
-    warnings = []
-
-    # 1. refBuild required
-    if not refBuild:
-        warnings.append("Warning: refBuild is required. Please select a reference genome.")
-
-    # 2. strandMode required if paired == True
-    if paired is True and not strandMode:
-        warnings.append("Warning: strandMode is required when paired is set to true.")
-
-    # 3. window sizes must be ≥ 0
-    for val, name in [
-        (trim_front1, "trim_front1"),
-        (trim_tail, "trim_tail1"),
-        (cut_front_ws, "cut_front_window_size"),
-        (cut_tail_ws, "cut_tail_window_size"),
-        (cut_right_ws, "cut_right_window_size"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    # 4. mean quality values must be ≥ 0
-    for val, name in [
-        (cut_front_q, "cut_front_mean_quality"),
-        (cut_tail_q, "cut_tail_mean_quality"),
-        (cut_right_q, "cut_right_mean_quality"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    # 5. read quality/length values must be ≥ 0
-    for val, name in [
-        (avg_qual, "average_qual"),
-        (length_required, "length_required"),
-        (max_len1, "max_len1"),
-        (max_len2, "max_len2"),
-        (poly_x_min_len, "poly_x_min_len"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -523,6 +467,94 @@ def populate_default_values(entity_data, app_data):
     )
 
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
+
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("refBuild"), "value"),
+        Input(id("paired"), "value"),
+        Input(id("strandMode"), "value"),
+
+        Input(id("trim_front1"), "value"),
+        Input(id("trim_tail1"), "value"),
+        Input(id("cut_front_window_size"), "value"),
+        Input(id("cut_tail_window_size"), "value"),
+        Input(id("cut_right_window_size"), "value"),
+
+        Input(id("cut_front_mean_quality"), "value"),
+        Input(id("cut_tail_mean_quality"), "value"),
+        Input(id("cut_right_mean_quality"), "value"),
+
+        Input(id("average_qual"), "value"),
+        Input(id("length_required"), "value"),
+        Input(id("max_len1"), "value"),
+        Input(id("max_len2"), "value"),
+        Input(id("poly_x_min_len"), "value"),
+    ]
+)
+def check_warnings(refBuild, paired, strandMode,
+                        trim_front1, trim_tail, cut_front_ws, cut_tail_ws, cut_right_ws,
+                        cut_front_q, cut_tail_q, cut_right_q,
+                        avg_qual, length_required, max_len1, max_len2, poly_x_min_len):
+    """
+    Validate input settings for read preprocessing and reference alignment and return relevant warnings.
+
+    This Dash callback checks for common input issues related to reference genome selection, strand mode, 
+    and various read trimming or filtering thresholds. It alerts the user if required fields are missing 
+    or if values are out of acceptable ranges.
+
+    Args:
+        refBuild (str): Selected reference genome build.
+        paired (str or bool): Whether the reads are paired-end (typically True/False or string equivalent).
+        strandMode (str): Selected strand-specific alignment mode.
+        trim_front1 (int): Number of bases to trim from the front of read 1.
+        trim_tail (int): Number of bases to trim from the tail of read 1.
+        cut_front_ws (int): Window size for quality trimming from the front.
+        cut_tail_ws (int): Window size for quality trimming from the tail.
+        cut_right_ws (int): Window size for quality trimming from the right.
+        cut_front_q (int): Minimum average quality required in the front trimming window.
+        cut_tail_q (int): Minimum average quality required in the tail trimming window.
+        cut_right_q (int): Minimum average quality required in the right trimming window.
+        avg_qual (int): Minimum average read quality required.
+        length_required (int): Minimum read length to keep after trimming.
+        max_len1 (int): Maximum allowed length for read 1.
+        max_len2 (int): Maximum allowed length for read 2.
+        poly_x_min_len (int): Minimum length of polyX stretch to trigger trimming.
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: List of warning messages wrapped in Dash `html.Div` components, or an empty string if no warnings.
+            - bool: True if any warnings are detected (to open the alert), False otherwise.
+    """
+    warnings = []
+
+    # 1. refBuild required
+    if not refBuild:
+        warnings.append("Warning: refBuild is required. Please select a reference genome.")
+
+    # 2. strandMode required
+    if not strandMode:
+        warnings.append("Warning: strandMode is required when paired is set to true.")
+
+    # 5. read quality/length values must be ≥ 0
+    for val, name in [
+        (avg_qual, "average_qual"),
+        (length_required, "length_required"),
+        (max_len1, "max_len1"),
+        (max_len2, "max_len2"),
+        (poly_x_min_len, "poly_x_min_len"),
+    ]:
+        if val is not None and val < 0:
+            warnings.append(f"Warning: {name} must be ≥ 0.")
+
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
 
 
 ######################################################################################################
@@ -610,6 +642,67 @@ def submit_star_job(
     cmdOptionsFastp, barcodePattern, markDuplicates, specialOptions, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+
+    """
+    Submit a STAR job by generating required dataset and parameter files and invoking the Sushi backend.
+
+    This Dash callback runs when the "Submit" button is clicked. It collects user-defined settings 
+    from the sidebar, builds the dataset and parameters `.tsv` files, constructs a bash command to 
+    execute the STAR job via the Sushi framework, and returns success or failure alerts.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the STAR job.
+        comment (str): Optional user comment or job description.
+        cores (int): Number of CPU cores to request.
+        ram (int): Requested RAM (in GB).
+        scratch (int): Requested scratch disk space (in GB).
+        partition (str): HPC partition or queue for job submission.
+        process_mode (str): Execution mode (e.g., test or production).
+        samples (str): Sample selection or IDs.
+        refBuild (str): Reference genome build.
+        paired (str or bool): Whether sequencing data is paired-end.
+        strandMode (str): Strand-specific mode for alignment.
+        refFeatureFile (str): Path or ID of the reference feature file.
+        secondRef (str): Optional secondary reference file.
+        cmdOptions (str): Additional command-line options for STAR.
+        getJunctions (str): Whether to extract splice junctions.
+        twopassMode (str): Enable STAR two-pass mode.
+        trimAdapter (str): Whether to trim adapter sequences.
+        trim_front1 (int): Number of bases to trim from the start of read 1.
+        trim_tail1 (int): Number of bases to trim from the end of read 1.
+        cut_front (str): Enable quality trimming from the front.
+        cut_front_window_size (int): Window size for trimming front bases.
+        cut_front_mean_quality (int): Quality threshold for trimming front.
+        cut_tail (str): Enable quality trimming from the tail.
+        cut_tail_window_size (int): Window size for trimming tail bases.
+        cut_tail_mean_quality (int): Quality threshold for trimming tail.
+        cut_right (str): Enable quality trimming from the right.
+        cut_right_window_size (int): Window size for trimming right-end bases.
+        cut_right_mean_quality (int): Quality threshold for trimming right.
+        average_qual (int): Minimum average read quality.
+        max_len1 (int): Maximum length allowed for read 1.
+        max_len2 (int): Maximum length allowed for read 2.
+        poly_x_min_len (int): Minimum polyX length to trigger trimming.
+        length_required (int): Minimum read length after trimming.
+        cmdOptionsFastp (str): Additional options for Fastp preprocessing.
+        barcodePattern (str): Optional barcode pattern for demultiplexing.
+        markDuplicates (str): Whether to mark duplicate reads.
+        specialOptions (str): Special execution flags or custom options.
+        mail (str): Email address to send job notifications.
+        dataset (list): Dataset loaded in the frontend table.
+        selected_rows (list): Selected row indices from the dataset table.
+        token_data (dict): Authentication token information.
+        entity_data (dict): Metadata about the user or project.
+        app_data (dict): Metadata specific to the STAR app instance.
+
+    Returns:
+        tuple:
+            - bool: True if job submission succeeded (shows success alert).
+            - bool: True if job submission failed (shows failure alert).
+    """
+
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"

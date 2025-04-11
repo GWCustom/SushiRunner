@@ -10,9 +10,9 @@ from bfabric_web_apps import (
     SCRATCH_PATH
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
-
 from sushi_utils.component_utils import submitbutton_id
 import os
+import re
 
 ######################################################################################################
 ####################### STEP 1: Get Data From the User! ##############################################
@@ -316,65 +316,6 @@ alerts = html.Div(
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
 
-import re
-from dash import html
-from dash.dependencies import Input, Output
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("sampleGroup"), "value"),
-        Input(id("refGroup"), "value"),
-        Input(id("grouping2"), "value"),
-        Input(id("backgroundExpression"), "value"),
-        Input(id("pValThreshGO"), "value"),
-        Input(id("log2RatioThreshGO"), "value"),
-        Input(id("fdrThreshORA"), "value"),
-        Input(id("fdrThreshGSEA"), "value"),
-    ]
-)
-def check_image_based_warnings(sampleGroup, refGroup, grouping2,
-                               backgroundExpression, pValThreshGO, log2RatioThreshGO,
-                               fdrThreshORA, fdrThreshGSEA):
-    warnings = []
-
-    # 1. sampleGroup and refGroup must be different
-    if sampleGroup and refGroup and sampleGroup == refGroup:
-        warnings.append("Warning: sampleGroup should be different from refGroup.")
-
-    # 2. grouping2 format: must match "NAME [Factor]" or "NAME [Numeric]"
-    if grouping2:
-        pattern = r".+\s*\[(Factor|Numeric)\]$"
-        if not re.match(pattern, grouping2):
-            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
-
-    # 3. backgroundExpression must be >= 0
-    if backgroundExpression is not None and backgroundExpression < 0:
-        warnings.append("Warning: backgroundExpression must be ≥ 0.")
-
-    # 4. pValThreshGO, fdrThreshORA, fdrThreshGSEA must be > 0 and ≤ 1
-    for val, name in [
-        (pValThreshGO, "pValThreshGO"),
-        (fdrThreshORA, "fdrThreshORA"),
-        (fdrThreshGSEA, "fdrThreshGSEA"),
-    ]:
-        if val is None or not (0 < val <= 1):
-            warnings.append(f"Warning: {name} must be > 0 and ≤ 1.")
-
-    # 5. log2RatioThreshGO must be >= 0
-    if log2RatioThreshGO is not None and log2RatioThreshGO < 0:
-        warnings.append("Warning: log2RatioThreshGO must be ≥ 0.")
-
-    # Output all warnings
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
-
 @app.callback(
     Output(id("Layout"), "children"),
     [
@@ -474,6 +415,68 @@ def populate_default_values(entity_data, app_data):
     )
 
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("sampleGroup"), "value"),
+        Input(id("refGroup"), "value"),
+        Input(id("grouping2"), "value"),
+        Input(id("backgroundExpression"), "value"),
+        Input(id("pValThreshGO"), "value"),
+        Input(id("log2RatioThreshGO"), "value"),
+        Input(id("fdrThreshORA"), "value"),
+        Input(id("fdrThreshGSEA"), "value"),
+    ]
+)
+def check_warnings(sampleGroup, refGroup, grouping2,
+                               backgroundExpression, pValThreshGO, log2RatioThreshGO,
+                               fdrThreshORA, fdrThreshGSEA):
+    
+    """
+    Validate user input for common configuration issues and display relevant warnings.
+
+    This Dash callback is triggered when specific form fields are modified. It checks for logical 
+    conflicts between the selected sample and reference groups, as well as the format of the secondary 
+    grouping variable. It returns warning messages to the frontend if any issues are detected.
+
+    Args:
+        sampleGroup (str): Selected sample group for the analysis.
+        refGroup (str): Reference group for comparison.
+        grouping2 (str): Optional secondary grouping variable, must follow 'NAME [Factor]' or 'NAME [Numeric]' format.
+        backgroundExpression (str): Background expression setting (not actively validated in this function).
+        pValThreshGO (float): p-value threshold for GO analysis (not actively validated in this function).
+        log2RatioThreshGO (float): Log2 ratio threshold for GO analysis (not actively validated in this function).
+        fdrThreshORA (float): FDR threshold for ORA analysis (not actively validated in this function).
+        fdrThreshGSEA (float): FDR threshold for GSEA analysis (not actively validated in this function).
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: List of warning messages wrapped in Dash `html.Div` components, or an empty string if no warnings.
+            - bool: True if any warnings are present (to open the alert), False otherwise.
+    """
+
+    warnings = []
+
+    # 1. sampleGroup and refGroup must be different
+    if sampleGroup and refGroup and sampleGroup == refGroup:
+        warnings.append("Warning: sampleGroup should be different from refGroup.")
+
+    # 2. grouping2 format: must match "NAME [Factor]" or "NAME [Numeric]"
+    if grouping2:
+        pattern = r".+\s*\[(Factor|Numeric)\]$"
+        if not re.match(pattern, grouping2):
+            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
+
+    # Output all warnings
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
+
 
 ######################################################################################################
 ####################### STEP 2: Get data from B-Fabric! ##############################################
@@ -549,6 +552,55 @@ def submit_deseq_job(
     specialOptions, expressionName, mail, Rversion,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+    """
+    Submit a DESeq2 job by preparing dataset and parameter files and invoking the Sushi backend.
+
+    This Dash callback is triggered when the "Submit" button is clicked. It gathers user input and
+    metadata from the app sidebar and dataset, saves them as `.tsv` files, constructs a bash command 
+    to execute the DESeq2 job through the Sushi system, and displays the appropriate alert depending 
+    on the outcome.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the DESeq2 job.
+        comment (str): Optional user comment or description for the job.
+        cores (int): Number of CPU cores to request.
+        ram (int): Amount of RAM requested (in GB).
+        scratch (int): Scratch disk space required (in GB).
+        partition (str): HPC partition/queue to submit the job to.
+        process_mode (str): Job processing mode (e.g., normal, test).
+        samples (str): Sample selection or configuration.
+        refBuild (str): Reference genome build.
+        refFeatureFile (str): Feature annotation file path or ID.
+        featureLevel (str): Genomic feature level (e.g., gene, transcript).
+        grouping (str): Primary grouping factor for the DE analysis.
+        sampleGroup (str): Selected sample group.
+        refGroup (str): Selected reference group.
+        onlyCompGroupsHeatmap (str): Whether to limit heatmap to comparison groups only.
+        grouping2 (str): Optional secondary grouping factor, must be in format 'NAME [Factor]' or 'NAME [Numeric]'.
+        backgroundExpression (str): Background expression filtering setting.
+        transcriptTypes (str): Type of transcripts to include.
+        runGO (str): Whether to run Gene Ontology enrichment analysis.
+        pValThreshGO (float): P-value threshold for GO analysis.
+        log2RatioThreshGO (float): Log2 fold change threshold for GO analysis.
+        fdrThreshORA (float): FDR threshold for Over-Representation Analysis (ORA).
+        fdrThreshGSEA (float): FDR threshold for Gene Set Enrichment Analysis (GSEA).
+        specialOptions (str): Additional special options or command-line flags.
+        expressionName (str): Identifier for the expression dataset.
+        mail (str): Email address for job notifications.
+        Rversion (str): R version to use for the job.
+        dataset (list): Dataset content fetched from the frontend.
+        selected_rows (list): Selected row indices from the dataset table.
+        token_data (dict): Authentication token information.
+        entity_data (dict): Metadata associated with the user or organization.
+        app_data (dict): Metadata specific to the DESeq2 application.
+
+    Returns:
+        tuple:
+            - bool: True if the job was successfully submitted (opens success alert).
+            - bool: True if the job submission failed (opens failure alert).
+    """
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"

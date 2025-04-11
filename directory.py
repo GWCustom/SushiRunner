@@ -37,7 +37,7 @@ DIRECTORY = {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
-        '377': {
+        '222': {
             'layout': EdgeR.layout,
             'sidebar': EdgeR.sidebar,
             'alerts': EdgeR.alerts
@@ -57,7 +57,7 @@ DIRECTORY = {
             'sidebar': Bowtie2.sidebar,
             'alerts': Bowtie2.alerts
         },
-        '666': {
+        '377': {
             'layout': CountQCApp.layout,
             'sidebar': CountQCApp.sidebar,
             'alerts': CountQCApp.alerts,

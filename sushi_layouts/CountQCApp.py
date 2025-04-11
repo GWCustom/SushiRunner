@@ -46,7 +46,7 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 # CountQC Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("CountQC App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("CountQC App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -57,8 +57,6 @@ sidebar = dbc.Container(
             dbc.Label("Comment", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
-
-        html.P("CountQC App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -132,10 +130,10 @@ sidebar = dbc.Container(
 
         html.Div([
             dbc.Label("normMethod", style={"font-size": "0.85rem"}),
-            dbc.Select(
+            dbc.Input(
                 id=f'{title}_normMethod',
-                options=[{'label': 'logMean', 'value': 'logMean'}],
                 value='logMean',
+                type='text',
                 style=component_styles
             )
         ]),
@@ -398,6 +396,48 @@ def submit_countqc_job(
     selectByFtest, transcriptTypes, specialOptions, expressionName, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+    """
+    Submit a CountQC job by creating dataset and parameter files, then triggering the Sushi backend.
+
+    This Dash callback is activated by clicking the "Submit" button. It collects user-defined parameters 
+    for the CountQC analysis, writes them into structured `.tsv` files, constructs the appropriate bash 
+    command to submit the job using Sushi, and returns an alert indicating the result of the submission.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button was clicked.
+        name (str): Name of the CountQC job.
+        comment (str): Optional job comment or description.
+        cores (int): Number of CPU cores requested.
+        ram (int): Amount of RAM requested (in GB).
+        scratch (int): Scratch disk space requested (in GB).
+        partition (str): HPC partition or queue to which the job will be submitted.
+        process_mode (str): Processing mode to use for the job (e.g., normal or debug).
+        samples (str): Sample IDs or configuration.
+        label_name (str): Label name for the output.
+        refBuild (str): Reference genome build.
+        refFeatureFile (str): Annotation file with gene or feature information.
+        featureLevel (str): Level of features to analyze (e.g., gene, transcript).
+        normMethod (str): Normalization method used for counts.
+        runGO (str): Whether to perform Gene Ontology enrichment analysis.
+        backgroundExpression (str): Background expression filtering setting.
+        topGeneSize (int): Number of top genes to retain for further analysis.
+        selectByFtest (str): Whether to use F-test for feature selection.
+        transcriptTypes (str): Types of transcripts to include.
+        specialOptions (str): Additional command-line flags or custom settings.
+        expressionName (str): Identifier for the expression matrix.
+        mail (str): Email address to receive job status updates.
+        dataset (list): Dataset as shown in the frontend table.
+        selected_rows (list): Selected row indices from the dataset.
+        token_data (dict): Authentication and session data.
+        entity_data (dict): Metadata about the user or project entity.
+        app_data (dict): Metadata or configuration specific to the CountQC app.
+
+    Returns:
+        tuple:
+            - bool: True if the job was successfully submitted (triggers success alert).
+            - bool: True if the job submission failed (triggers failure alert).
+    """
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"

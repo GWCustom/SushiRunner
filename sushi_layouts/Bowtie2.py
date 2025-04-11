@@ -46,7 +46,7 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 # Bowtie2 Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("Bowtie2 App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("Bowtie2 App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -57,8 +57,6 @@ sidebar = dbc.Container(
             dbc.Label("Comment", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
-
-        html.P("Bowtie2 App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -222,28 +220,33 @@ sidebar = dbc.Container(
         html.Div([
             dbc.Label("average_qual", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_average_qual', value=0, type='number', style=component_styles),
-            dbc.Tooltip("if one read average quality score , then this read/pair is discarded. Default 0 means no requirement", target=f'{title}_average_qual', placement="right")
+        dbc.Tooltip("If one read average quality score, then this read/pair is discarded. Default 0 means no requirement.", target=f'{title}_average_qual', placement="right")
         ]),
 
         html.Div([
             dbc.Label("max_len1", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_max_len1', value=0, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_max_len1', value=0, type='number', style=component_styles),
+        dbc.Tooltip("If read1 is longer than max_len1, then trim read1 at its tail to make it as long as max_len1. Default 0 means no limitation.", target=f'{title}_max_len1', placement="right")
         ]),
 
         html.Div([
             dbc.Label("max_len2", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_max_len2', value=0, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_max_len2', value=0, type='number', style=component_styles),
+        dbc.Tooltip("If read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation.", target=f'{title}_max_len2', placement="right")
         ]),
 
         html.Div([
             dbc.Label("poly_x_min_len", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_poly_x_min_len', value=10, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_poly_x_min_len', value=10, type='number', style=component_styles),
+        dbc.Tooltip("The minimum length to detect polyX in the read tail. 10 by default.", target=f'{title}_poly_x_min_len', placement="right")
         ]),
 
         html.Div([
             dbc.Label("length_required", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_length_required', value=18, type='number', style=component_styles)
+            dbc.Input(id=f'{title}_length_required', value=18, type='number', style=component_styles),
+        dbc.Tooltip("Reads shorter than length_required will be discarded.", target=f'{title}_length_required', placement="right")
         ]),
+
 
         html.Div([
             dbc.Label("cmdOptionsFastp", style={"font-size": "0.85rem"}),
@@ -311,79 +314,6 @@ alerts = html.Div(
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("refBuild"), "value"),
-        Input(id("paired"), "value"),
-
-        Input(id("trim_front1"), "value"),
-        Input(id("trim_tail1"), "value"),
-        Input(id("cut_front_window_size"), "value"),
-        Input(id("cut_tail_window_size"), "value"),
-        Input(id("cut_right_window_size"), "value"),
-
-        Input(id("cut_front_mean_quality"), "value"),
-        Input(id("cut_tail_mean_quality"), "value"),
-        Input(id("cut_right_mean_quality"), "value"),
-
-        Input(id("average_qual"), "value"),
-        Input(id("length_required"), "value"),
-        Input(id("max_len1"), "value"),
-        Input(id("max_len2"), "value"),
-        Input(id("poly_x_min_len"), "value"),
-    ]
-)
-def check_star_warnings(refBuild, paired,
-                        trim_front1, trim_tail, cut_front_ws, cut_tail_ws, cut_right_ws,
-                        cut_front_q, cut_tail_q, cut_right_q,
-                        avg_qual, length_required, max_len1, max_len2, poly_x_min_len):
-
-    warnings = []
-
-    # 1. refBuild required
-    if not refBuild:
-        warnings.append("Warning: refBuild is required. Please select a reference genome.")
-
-    # 3. window sizes must be ≥ 0
-    for val, name in [
-        (trim_front1, "trim_front1"),
-        (trim_tail, "trim_tail1"),
-        (cut_front_ws, "cut_front_window_size"),
-        (cut_tail_ws, "cut_tail_window_size"),
-        (cut_right_ws, "cut_right_window_size"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    # 4. mean quality values must be ≥ 0
-    for val, name in [
-        (cut_front_q, "cut_front_mean_quality"),
-        (cut_tail_q, "cut_tail_mean_quality"),
-        (cut_right_q, "cut_right_mean_quality"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    # 5. read quality/length values must be ≥ 0
-    for val, name in [
-        (avg_qual, "average_qual"),
-        (length_required, "length_required"),
-        (max_len1, "max_len1"),
-        (max_len2, "max_len2"),
-        (poly_x_min_len, "poly_x_min_len"),
-    ]:
-        if val is not None and val < 0:
-            warnings.append(f"Warning: {name} must be ≥ 0.")
-
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
 
 @app.callback(
     Output(id("Layout"), "children"),
@@ -484,7 +414,114 @@ def populate_default_values(entity_data, app_data):
     )
 
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
 
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("refBuild"), "value"),
+        Input(id("paired"), "value"),
+
+        Input(id("trim_front1"), "value"),
+        Input(id("trim_tail1"), "value"),
+        Input(id("cut_front_window_size"), "value"),
+        Input(id("cut_tail_window_size"), "value"),
+        Input(id("cut_right_window_size"), "value"),
+
+        Input(id("cut_front_mean_quality"), "value"),
+        Input(id("cut_tail_mean_quality"), "value"),
+        Input(id("cut_right_mean_quality"), "value"),
+
+        Input(id("average_qual"), "value"),
+        Input(id("length_required"), "value"),
+        Input(id("max_len1"), "value"),
+        Input(id("max_len2"), "value"),
+        Input(id("poly_x_min_len"), "value"),
+    ]
+)
+def check_warnings(refBuild, paired,
+                        trim_front1, trim_tail, cut_front_ws, cut_tail_ws, cut_right_ws,
+                        cut_front_q, cut_tail_q, cut_right_q,
+                        avg_qual, length_required, max_len1, max_len2, poly_x_min_len):
+    """
+    Validate preprocessing parameters and genome selection for the STAR app and return user warnings.
+
+    This Dash callback is triggered when the user modifies read trimming, quality filtering, or reference 
+    settings. It ensures that required fields like `refBuild` and `paired` are provided, and that numeric 
+    parameters such as trimming lengths and quality thresholds are non-negative.
+
+    Args:
+        refBuild (str): Selected reference genome build.
+        paired (str or bool): Indicates whether input reads are paired-end.
+        trim_front1 (int): Number of bases to trim from the front of read 1.
+        trim_tail (int): Number of bases to trim from the tail of read 1.
+        cut_front_ws (int): Window size for quality trimming from the front.
+        cut_tail_ws (int): Window size for quality trimming from the tail.
+        cut_right_ws (int): Window size for quality trimming from the right.
+        cut_front_q (int): Minimum average quality for trimming from the front.
+        cut_tail_q (int): Minimum average quality for trimming from the tail.
+        cut_right_q (int): Minimum average quality for trimming from the right.
+        avg_qual (int): Minimum average read quality.
+        length_required (int): Minimum read length to retain after trimming.
+        max_len1 (int): Maximum allowed length for read 1.
+        max_len2 (int): Maximum allowed length for read 2.
+        poly_x_min_len (int): Minimum polyX stretch to trigger trimming.
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: List of warning messages wrapped in Dash `html.Div` components, or an empty string if no warnings.
+            - bool: True if any warnings are detected (to open the alert), False otherwise.
+    """
+
+
+    warnings = []
+
+    # 1. refBuild required
+    if not refBuild:
+        warnings.append("Warning: refBuild is required. Please select a reference genome.")
+
+    # 2. paired required
+    if not paired:
+        warnings.append("Warning: paired is required. Please select a reference genome.")
+
+    # 3. window sizes must be ≥ 0
+    for val, name in [
+        (trim_front1, "trim_front1"),
+        (trim_tail, "trim_tail1"),
+        (cut_front_ws, "cut_front_window_size"),
+        (cut_tail_ws, "cut_tail_window_size"),
+        (cut_right_ws, "cut_right_window_size"),
+    ]:
+        if val is not None and val < 0:
+            warnings.append(f"Warning: {name} must be ≥ 0.")
+
+    # 4. mean quality values must be ≥ 0
+    for val, name in [
+        (cut_front_q, "cut_front_mean_quality"),
+        (cut_tail_q, "cut_tail_mean_quality"),
+        (cut_right_q, "cut_right_mean_quality"),
+    ]:
+        if val is not None and val < 0:
+            warnings.append(f"Warning: {name} must be ≥ 0.")
+
+    # 5. read quality/length values must be ≥ 0
+    for val, name in [
+        (avg_qual, "average_qual"),
+        (length_required, "length_required"),
+        (max_len1, "max_len1"),
+        (max_len2, "max_len2"),
+        (poly_x_min_len, "poly_x_min_len"),
+    ]:
+        if val is not None and val < 0:
+            warnings.append(f"Warning: {name} must be ≥ 0.")
+
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
 
 
 ######################################################################################################
@@ -570,6 +607,63 @@ def submit_bowtie2_job(
     cmdOptionsFastp, markDuplicates, generateBigWig, specialOptions, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+
+    """
+    Submit a Bowtie2 job by preparing dataset and parameter files, then invoking the Sushi backend.
+
+    This Dash callback is triggered when the "Submit" button is clicked. It gathers all user-specified 
+    inputs, builds the dataset and parameter files in TSV format, constructs the corresponding bash 
+    command for the Bowtie2 job, and submits it using the Sushi job runner. It returns a success or 
+    failure alert based on the execution result.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the Bowtie2 job.
+        comment (str): Optional comment or description provided by the user.
+        cores (int): Number of CPU cores requested.
+        ram (int): RAM requested in GB.
+        scratch (int): Scratch disk space requested in GB.
+        partition (str): Target partition (queue) for the job.
+        process_mode (str): Execution mode (e.g., "normal", "test").
+        samples (str): Sample selection or configuration string.
+        refBuild (str): Reference genome build identifier.
+        paired (str or bool): Indicates whether the reads are paired-end.
+        secondRef (str): Optional second reference file.
+        cmdOptions (str): Additional command-line options for Bowtie2.
+        trimAdapter (str): Whether adapter trimming is enabled.
+        trim_front1 (int): Bases to trim from the front of read 1.
+        trim_tail1 (int): Bases to trim from the tail of read 1.
+        cut_front (str): Whether quality trimming from the front is enabled.
+        cut_front_window_size (int): Window size for trimming the front.
+        cut_front_mean_quality (int): Minimum mean quality in the front trimming window.
+        cut_tail (str): Whether quality trimming from the tail is enabled.
+        cut_tail_window_size (int): Window size for trimming the tail.
+        cut_tail_mean_quality (int): Minimum mean quality in the tail trimming window.
+        cut_right (str): Whether quality trimming from the right is enabled.
+        cut_right_window_size (int): Window size for trimming the right end.
+        cut_right_mean_quality (int): Minimum mean quality in the right trimming window.
+        average_qual (int): Minimum average read quality required.
+        max_len1 (int): Maximum read length for read 1.
+        max_len2 (int): Maximum read length for read 2.
+        poly_x_min_len (int): Minimum polyX stretch length to trigger trimming.
+        length_required (int): Minimum length required to retain a read.
+        cmdOptionsFastp (str): Additional options for the Fastp preprocessor.
+        markDuplicates (str): Whether to mark duplicates in the aligned reads.
+        generateBigWig (str): Whether to generate a BigWig coverage file.
+        specialOptions (str): Additional special or app-specific options.
+        mail (str): Email address for job status notifications.
+        dataset (list): Dataset records displayed in the UI.
+        selected_rows (list): Indices of selected rows in the dataset table.
+        token_data (dict): Authentication token for backend communication.
+        entity_data (dict): Metadata for the project, user, or dataset context.
+        app_data (dict): Configuration metadata for the Bowtie2 app.
+
+    Returns:
+        tuple:
+            - bool: True if the job was successfully submitted (opens success alert).
+            - bool: True if the job submission failed (opens failure alert).
+    """
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"
