@@ -43,10 +43,10 @@ def id(name):
 # Component styles
 component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
 
-# Fastqc10x Sidebar layout with tooltips
+# FastqS10x Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("Fastqc10x App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("FastqScreen10x App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -57,8 +57,6 @@ sidebar = dbc.Container(
             dbc.Label("Comment", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
-
-        html.P("Fastqc10x App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -222,6 +220,35 @@ def callback(data, sidebar):
 ##############################################################################################
 
 @app.callback(
+    [
+        Output(id('name'), 'value'),
+        Output(id('cores'), 'value'),
+        Output(id('ram'), 'value'),
+        Output(id('scratch'), 'value'),
+        Output(id('paired'), 'value'),
+        Output(id('label_name'), 'value'),
+    ],
+    [Input('entity', 'data')],
+    [State('app_data', 'data')]
+)
+def populate_default_values(entity_data, app_data):
+    name = entity_data.get("name", "Unknown") + "_FastqScreen10x"
+    return (
+        name,
+        8,
+        30,
+        300,
+        True,
+        "FastQC_Result"
+    )
+
+
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
+
+
+@app.callback(
     Output(id("alert-warning"), "children"),
     Output(id("alert-warning"), "is_open"),
     [
@@ -229,7 +256,23 @@ def callback(data, sidebar):
         Input(id("label_name"), "value"),
     ]
 )
-def check_fastqc10x_warnings(paired, label_name):
+def check_FastqScreen10x_warnings(paired, label_name):
+    """
+    Validate input fields required for the FastqScreen10x app and return relevant user warnings.
+
+    This Dash callback is triggered when the user modifies the `paired` or `label_name` fields. 
+    It ensures both fields are set and returns appropriate warning messages if they are missing.
+
+    Args:
+        paired (str or bool): Indicates whether the reads are paired-end; must be selected.
+        label_name (str): Label or identifier for the FastqScreen10x analysis run.
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: A list of Dash `html.Div` components with warning messages, or an empty string if no warnings exist.
+            - bool: True if any warnings are present (to open the warning alert), False otherwise.
+    """
+
     warnings = []
 
     # 1. paired is required
@@ -244,32 +287,6 @@ def check_fastqc10x_warnings(paired, label_name):
     if warnings:
         return [html.Div(w) for w in warnings], True
     return "", False
-
-
-
-@app.callback(
-    [
-        Output(id('name'), 'value'),
-        Output(id('cores'), 'value'),
-        Output(id('ram'), 'value'),
-        Output(id('scratch'), 'value'),
-        Output(id('paired'), 'value'),
-        Output(id('label_name'), 'value'),
-    ],
-    [Input('entity', 'data')],
-    [State('app_data', 'data')]
-)
-def populate_default_values(entity_data, app_data):
-    name = entity_data.get("name", "Unknown") + "_Fastqc10x"
-    return (
-        name,
-        8,
-        30,
-        300,
-        True,
-        "FastQC_Result"
-    )
-
 
 
 ######################################################################################################
@@ -323,11 +340,45 @@ def update_dataset(entity_data, dataset):
     ],
     prevent_initial_call=True
 )
-def submit_fastqc10x_job(
+def submit_FastqScreen10x_job(
     n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
     paired, label_name, cmdOptions, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+    """
+    Submit a FastqScreen10x job by generating dataset and parameter files and invoking the Sushi backend.
+
+    This Dash callback is triggered when the "Submit" button is clicked. It gathers user input parameters 
+    for a FastqScreen10x analysis run, writes the dataset and parameter files in TSV format, constructs the 
+    appropriate bash command, and submits the job via the Sushi framework. It returns alerts to indicate 
+    success or failure of the submission.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button was clicked.
+        name (str): Name of the FastqScreen10x job.
+        comment (str): Optional comment or job description.
+        cores (int): Number of CPU cores to request.
+        ram (int): RAM requested in GB.
+        scratch (int): Scratch disk space requested in GB.
+        partition (str): HPC partition or queue for job execution.
+        process_mode (str): Execution mode (e.g., normal, test).
+        samples (str): Input sample identifiers.
+        paired (str or bool): Whether the input reads are paired-end.
+        label_name (str): Label or identifier for the FastqScreen10x run.
+        cmdOptions (str): Additional command-line flags for FastqScreen10x.
+        mail (str): Email address for job status notifications.
+        dataset (list): Dataset data shown in the frontend.
+        selected_rows (list): Selected row indices in the dataset table.
+        token_data (dict): Authentication token data for secure API access.
+        entity_data (dict): Metadata related to the user or associated project.
+        app_data (dict): Configuration and metadata specific to the FastqScreen10x app.
+
+    Returns:
+        tuple:
+            - bool: True if job submission succeeded (triggers success alert).
+            - bool: True if job submission failed (triggers failure alert).
+    """
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"
@@ -359,7 +410,7 @@ def submit_fastqc10x_job(
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
-            bundle exec sushi_fabric --class Fastqc10xApp --dataset {dataset_path} --parameterset {param_path} --run \\
+            bundle exec sushi_fabric --class FastqScreen10xApp --dataset {dataset_path} --parameterset {param_path} --run \\
             --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """

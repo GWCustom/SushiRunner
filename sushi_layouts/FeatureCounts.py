@@ -46,7 +46,7 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 # FeatureCounts Sidebar layout with tooltips
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("FeatureCounts App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("FeatureCounts App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -57,8 +57,6 @@ sidebar = dbc.Container(
             dbc.Label("Comment", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
-
-        html.P("FeatureCounts App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -331,48 +329,6 @@ def callback(data, sidebar):
 ##############################################################################################
 
 @app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("refBuild"), "value"),
-        Input(id("paired"), "value"),
-        Input(id("strandMode"), "value"),
-        Input(id("minFeatureOverlap"), "value"),
-        Input(id("minMapQuality"), "value"),
-    ]
-)
-def check_featurecounts_warnings(refBuild, paired, strandMode, minFeatureOverlap, minMapQuality):
-    warnings = []
-
-    # 1. refBuild required
-    if not refBuild:
-        warnings.append("Warning: refBuild is required. Please select a reference genome.")
-
-    # 2. paired required
-    if paired is None:
-        warnings.append("Warning: paired is required. Please select true or false.")
-
-    # 3. strandMode required
-    if not strandMode:
-        warnings.append("Warning: strandMode is required. Please select a mode (none, sense, antisense).")
-
-    # 4. minFeatureOverlap must be ≥ 0
-    if minFeatureOverlap is not None and minFeatureOverlap < 0:
-        warnings.append("Warning: minFeatureOverlap must be ≥ 0.")
-
-    # 5. minMapQuality must be ≥ 0
-    if minMapQuality is not None and minMapQuality < 0:
-        warnings.append("Warning: minMapQuality must be ≥ 0.")
-
-    # Output warnings
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
-@app.callback(
     [
         Output(id('name'), 'value'),
         Output(id('cores'), 'value'),
@@ -417,6 +373,65 @@ def populate_default_values(entity_data, app_data):
         "protein_coding"
     )
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
+
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("refBuild"), "value"),
+        Input(id("paired"), "value"),
+        Input(id("strandMode"), "value"),
+        Input(id("minFeatureOverlap"), "value"),
+        Input(id("minMapQuality"), "value"),
+    ]
+)
+def check_featurecounts_warnings(refBuild, paired, strandMode, minFeatureOverlap, minMapQuality):
+    """
+    Validate required inputs and parameters for the FeatureCounts app and return relevant warnings.
+
+    This Dash callback checks for missing or invalid input values related to the reference build, 
+    read pairing, strand-specific mode, and numerical thresholds. It provides warnings to help 
+    users ensure valid configuration before job submission.
+
+    Args:
+        refBuild (str): Selected reference genome build.
+        paired (str or bool): Whether the reads are paired-end.
+        strandMode (str): Strand-specific mode; should be 'sense' or 'antisense'.
+        minFeatureOverlap (int): Minimum number of overlapping bases for a read to be assigned to a feature.
+        minMapQuality (int): Minimum mapping quality threshold (not validated in this function).
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: List of warning messages wrapped in Dash `html.Div` components, or an empty string if no warnings.
+            - bool: True if any warnings are present (to open the alert), False otherwise.
+    """
+
+    warnings = []
+
+    # 1. refBuild required
+    if not refBuild:
+        warnings.append("Warning: refBuild is required. Please select a reference genome.")
+
+    # 2. paired required
+    if paired is None:
+        warnings.append("Warning: paired is required. Please select true or false.")
+
+    # 3. strandMode required
+    if strandMode == "none":
+        warnings.append("Warning: strandMode is required. Please select a mode (sense, antisense).")
+
+    # 4. minFeatureOverlap must be ≥ 0
+    if minFeatureOverlap is not None and minFeatureOverlap < 0:
+        warnings.append("Warning: minFeatureOverlap must be ≥ 0.")
+
+    # Output warnings
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
 
 ######################################################################################################
 ####################### STEP 2: Get data from B-Fabric! ##############################################
@@ -487,6 +502,52 @@ def submit_featurecounts_job(
     keepMultiHits, ignoreDup, transcriptTypes, secondRef, specialOptions, mail,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+    """
+    Submit a FeatureCounts job by generating dataset and parameter files and invoking the Sushi backend.
+
+    This Dash callback is triggered by the "Submit" button. It collects all required job parameters from
+    the sidebar inputs, creates `.tsv` files for the dataset and parameters, builds the corresponding 
+    bash command to launch the FeatureCounts job via the Sushi system, and returns an alert indicating 
+    whether the submission was successful.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the FeatureCounts job.
+        comment (str): Optional description or annotation for the job.
+        cores (int): Number of CPU cores to allocate.
+        ram (int): Amount of RAM to allocate (in GB).
+        scratch (int): Scratch disk space to allocate (in GB).
+        partition (str): Name of the HPC partition (queue) for job submission.
+        process_mode (str): Execution mode (e.g., standard, debug).
+        samples (str): Sample IDs or configuration.
+        refBuild (str): Reference genome build.
+        paired (str or bool): Whether input reads are paired-end.
+        strandMode (str): Strand-specific counting mode (e.g., sense, antisense).
+        refFeatureFile (str): Path or identifier for the reference feature annotation file.
+        featureLevel (str): Level of features to be counted (e.g., gene, transcript).
+        gtfFeatureType (str): GTF feature type to use for read counting (e.g., exon).
+        allowMultiOverlap (str): Whether to allow reads overlapping multiple features.
+        countPrimaryAlignmentsOnly (str): Count only primary alignments if enabled.
+        minFeatureOverlap (int): Minimum number of overlapping bases to count a read.
+        minMapQuality (int): Minimum required mapping quality.
+        keepMultiHits (str): Whether to include multi-mapped reads.
+        ignoreDup (str): Whether to ignore duplicate reads.
+        transcriptTypes (str): Types of transcripts to include in the analysis.
+        secondRef (str): Optional secondary reference genome or annotation file.
+        specialOptions (str): Any extra command-line options.
+        mail (str): Email address for job status notifications.
+        dataset (list): Dataset content from the UI.
+        selected_rows (list): Selected dataset row indices.
+        token_data (dict): Auth token and user session data.
+        entity_data (dict): Metadata about the current user/project context.
+        app_data (dict): Metadata related to the FeatureCounts application.
+
+    Returns:
+        tuple:
+            - bool: True if the job was successfully submitted (shows success alert).
+            - bool: True if the job submission failed (shows failure alert).
+    """
+    
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"

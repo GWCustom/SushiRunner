@@ -46,7 +46,7 @@ component_styles = {"margin-bottom": "18px", 'borderBottom': '1px solid lightgre
 # CellRangerApp Sidebar layout (updated with dropdown values)
 sidebar = dbc.Container(
     children=charge_switch + [
-        html.P("CellRanger App Generic Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
+        html.P("CellRanger App Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Name", style={"font-size": "0.85rem"}),
@@ -57,8 +57,6 @@ sidebar = dbc.Container(
             dbc.Label("Comment", style={"font-size": "0.85rem"}),
             dbc.Input(id=f'{title}_comment', value='', type='text', style=component_styles)
         ]),
-
-        html.P("CellRanger App Specific Parameters:", style={"font-weight": "bold", "font-size": "1rem", "margin-bottom": "10px"}),
 
         html.Div([
             dbc.Label("Cores", style=label_style),
@@ -354,47 +352,6 @@ def callback(data, sidebar):
 ##### C. Now we populate components with default values (Step 1: Get data from the user) #####
 ##############################################################################################
 
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(id("label_name"), "value"),
-        Input(id("refBuild"), "value"),
-        Input(id("expectedCells"), "value"),
-    ]
-)
-def check_cellranger_warnings(label_name, refBuild, expectedCells):
-    warnings = []
-
-    # 1. label_name required
-    if not label_name:
-        warnings.append("Warning: 'Label Name' is required. Please enter a value.")
-
-    # 2. refBuild required
-    if not refBuild:
-        warnings.append("Warning: 'refBuild' is required. Please select a reference genome.")
-
-    # 3. expectedCells must be ≥ 0
-    if expectedCells is not None and expectedCells < 0:
-        warnings.append("Warning: 'expectedCells' must be ≥ 0.")
-
-    # Output
-    if warnings:
-        return [html.Div(w) for w in warnings], True
-    return "", False
-
-
-
-
-
-
-
-
-
-
-
-
 @app.callback(
     [
         Output(id('name'), 'value'),
@@ -425,7 +382,7 @@ def populate_default_values(entity_data, app_data):
         60,
         300,
         "CellRangerCount",
-        "",
+        "To Do",
         "genes.gtf",
         "gene",
         "GEX",
@@ -438,7 +395,52 @@ def populate_default_values(entity_data, app_data):
         "Aligner/CellRanger/9.0.0"
     )
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
 
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(id("label_name"), "value"),
+        Input(id("refBuild"), "value"),
+        Input(id("expectedCells"), "value"),
+    ]
+)
+def check_cellranger_warnings(label_name, refBuild, expectedCells):
+    """
+    Validate required input fields for the CellRanger app and display appropriate warnings.
+
+    This Dash callback checks whether essential fields such as `label_name` and `refBuild` have 
+    been provided by the user. If any are missing, it returns user-friendly warning messages to 
+    be displayed in the frontend.
+
+    Args:
+        label_name (str): Label or identifier for the current CellRanger run.
+        refBuild (str): Selected reference genome build.
+        expectedCells (str or int): Expected number of cells (not validated in this function).
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: A list of Dash `html.Div` components with warnings, or an empty string if no warnings exist.
+            - bool: True if any warnings are present (to open the warning alert), False otherwise.
+    """
+
+    warnings = []
+
+    # 1. label_name required
+    if not label_name:
+        warnings.append("Warning: 'Label Name' is required. Please enter a value.")
+
+    # 2. refBuild required
+    if not refBuild:
+        warnings.append("Warning: 'refBuild' is required. Please select a reference genome.")
+
+    # Output
+    if warnings:
+        return [html.Div(w) for w in warnings], True
+    return "", False
 
 ######################################################################################################
 ####################### STEP 2: Get data from B-Fabric! ##############################################
@@ -511,6 +513,53 @@ def submit_cellranger_job(
     specialOptions, mail, CellRangerVersion,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
+    """
+    Submit a CellRanger job by creating dataset and parameter files and executing the Sushi backend job submission.
+
+    This Dash callback is triggered by clicking the "Submit" button. It collects user-defined parameters 
+    for a CellRanger run, builds `.tsv` files for dataset and parameters, constructs a Sushi-compatible 
+    bash command for the CellRanger job, and returns an alert indicating whether the submission was successful.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the CellRanger job.
+        comment (str): Optional description or comment for the job.
+        cores (int): Number of CPU cores to allocate.
+        ram (int): Amount of RAM to allocate (in GB).
+        scratch (int): Scratch disk space to allocate (in GB).
+        partition (str): HPC partition or queue to submit the job.
+        process_mode (str): Processing mode (e.g., normal, debug).
+        samples (str): Input sample IDs or configuration string.
+        label_name (str): Label or identifier for the analysis results.
+        refBuild (str): Reference genome build used for alignment.
+        refFeatureFile (str): Path or ID for the reference annotation file.
+        featureLevel (str): Level of feature granularity (e.g., gene, transcript).
+        TenXLibrary (str): 10X Genomics library chemistry type.
+        chemistry (str): Chemistry protocol used in sequencing (e.g., SC3Pv3).
+        includeIntrons (str): Whether intronic reads should be included.
+        expectedCells (int): Estimated number of cells expected in the dataset.
+        transcriptTypes (str): Types of transcripts to include in the analysis.
+        controlSeqs (str): Additional control sequences or spike-ins.
+        secondRef (str): Optional second reference genome or annotation.
+        runVeloCyto (str): Whether to run the VeloCyto analysis for RNA velocity.
+        bamStats (str): Whether to generate BAM-level alignment statistics.
+        keepAlignment (str): Whether to retain BAM files after processing.
+        cmdOptions (str): Additional command-line flags for CellRanger.
+        specialOptions (str): Application-specific special options.
+        mail (str): Email address for job status notifications.
+        CellRangerVersion (str): Version of CellRanger to use.
+        dataset (list): Dataset records displayed in the UI.
+        selected_rows (list): Indices of selected dataset rows.
+        token_data (dict): Authentication and session token metadata.
+        entity_data (dict): User, project, or session-related metadata.
+        app_data (dict): Metadata specific to the CellRanger app instance.
+
+    Returns:
+        tuple:
+            - bool: True if the job was successfully submitted (to open success alert).
+            - bool: True if job submission failed (to open failure alert).
+    """
+
     try:
         dataset_df = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
         dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"

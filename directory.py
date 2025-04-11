@@ -33,7 +33,7 @@ DIRECTORY = {
             'sidebar': FastqcApp.sidebar,
             'alerts': FastqcApp.alerts
         },
-        '111': { #377
+        '377': {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
@@ -57,7 +57,7 @@ DIRECTORY = {
             'sidebar': Bowtie2.sidebar,
             'alerts': Bowtie2.alerts
         },
-        '377': {
+        '666': {
             'layout': CountQCApp.layout,
             'sidebar': CountQCApp.sidebar,
             'alerts': CountQCApp.alerts,
@@ -72,12 +72,12 @@ DIRECTORY = {
             'sidebar': CellRanger.sidebar,
             'alerts': CellRanger.alerts
         },
-        '111': {
+        '999': {
             'layout': Fastqc10xApp.layout,
             'sidebar': Fastqc10xApp.sidebar,
             'alerts': Fastqc10xApp.alerts
         },
-        '999': {
+        '111': {
             'layout': FastqScreen10xApp.layout,
             'sidebar': FastqScreen10xApp.sidebar,
             'alerts': FastqScreen10xApp.alerts
