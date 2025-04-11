@@ -13,6 +13,7 @@ from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
 from sushi_utils.component_utils import submitbutton_id
 import os
+import re  # for grouping2 format check
 
 ######################################################################################################
 ####################### STEP 1: Get Data From the User! ##############################################
@@ -82,7 +83,7 @@ sidebar = dbc.Container(
             dbc.Label("RAM", style=label_style),
             dbc.Select(
                 id=f'{title}_ram',
-                options=[{'label': str(x), 'value': x} for x in [15, 32, 64]],
+                options=[{'label': str(x), 'value': x} for x in [16, 32, 64]],
                 style={"margin-bottom": "18px", 'borderBottom': '1px solid lightgrey'}
             )
         ]),
@@ -195,11 +196,12 @@ sidebar = dbc.Container(
             dbc.Select(
                 id=f'{title}_sampleGroup',
                 options=[
+                    {"label": "please select", "value": "please_select"},
                     {"label": "Controls", "value": "Controls"},
                     {"label": "Hetero", "value": "Hetero"},
                     {"label": "Homo", "value": "Homo"}
                 ],
-                value="Hetero",
+                value="please_select",
                 style=component_styles
             ),
             dbc.Tooltip(
@@ -215,11 +217,12 @@ sidebar = dbc.Container(
             dbc.Select(
                 id=f'{title}_sampleGroupBaseline',
                 options=[
+                    {"label": "please select", "value": "please_select"},
                     {"label": "Controls", "value": "Controls"},
                     {"label": "Hetero", "value": "Hetero"},
                     {"label": "Homo", "value": "Homo"}
                 ],
-                value="Controls",
+                value="please_select",
                 style=component_styles
             ),
             dbc.Tooltip(
@@ -235,11 +238,12 @@ sidebar = dbc.Container(
             dbc.Select(
                 id=f'{title}_refGroup',
                 options=[
+                    {"label": "please select", "value": "please_select"},
                     {"label": "Controls", "value": "Controls"},
                     {"label": "Hetero", "value": "Hetero"},
                     {"label": "Homo", "value": "Homo"}
                 ],
-                value="Controls",
+                value="please_select",
                 style=component_styles
             ),
             dbc.Tooltip(
@@ -255,11 +259,12 @@ sidebar = dbc.Container(
             dbc.Select(
                 id=f'{title}_refGroupBaseline',
                 options=[
+                    {"label": "please select", "value": "please_select"},
                     {"label": "Controls", "value": "Controls"},
                     {"label": "Hetero", "value": "Hetero"},
                     {"label": "Homo", "value": "Homo"}
                 ],
-                value="Hetero",
+                value="please_select",
                 style=component_styles
             ),
             dbc.Tooltip(
@@ -483,72 +488,16 @@ alerts = html.Div(
     [
         dbc.Alert("Success: Job Submitted!", color="success", id=id("alert-fade-success"), dismissable=True, is_open=False),
         dbc.Alert("Error: Job Submission Failed!", color="danger", id=id("alert-fade-fail"), dismissable=True, is_open=False),
-        dbc.Alert("", color="warning", id=id("alert-warning"), dismissable=True, is_open=False)
+        dbc.Alert("", color="danger", id=id("alert-warning"), dismissable=True, is_open=False)
     ],
     style={"margin": "20px"}
 )
 
 
+
 ####################################################################################
 ### C. Now we define the application callbacks (Step 1: Get data from the user) ####
 ####################################################################################
-
-
-import re  # for grouping2 format check
-
-@app.callback(
-    Output(id("alert-warning"), "children"),
-    Output(id("alert-warning"), "is_open"),
-    [
-        Input(f"{title}_sampleGroup", "value"),
-        Input(f"{title}_sampleGroupBaseline", "value"),
-        Input(f"{title}_refGroup", "value"),
-        Input(f"{title}_refGroupBaseline", "value"),
-        Input(f"{title}_grouping2", "value")
-    ]
-)
-def check_warnings(sampleGroup, sampleGroupBaseline, refGroup, refGroupBaseline, grouping2):
-    warnings = []
-    # Check sampleGroup and refGroup; they should be different.
-    if sampleGroup == refGroup:
-        warnings.append("Warning: sampleGroup should be different from refGroup.")
-    # Warning if baseline fields are empty (optional, per your spec).
-    if not sampleGroupBaseline:
-        warnings.append("Warning: Please select a baseline for sampleGroup if you have one.")
-    if not refGroupBaseline:
-        warnings.append("Warning: Please select a baseline for refGroup if you have one.")
-    # Check grouping2 format (only if grouping2 is provided)
-    if grouping2:
-        # This regex requires at least one character, then a space (optional) and then "[Factor]" or "[Numeric]"
-        pattern = r".+\s*\[(Factor|Numeric)\]$"
-        if not re.match(pattern, grouping2):
-            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
-    
-    if warnings:
-        # Return the warning messages as a list of <div> components, and set is_open to True.
-        return [html.Div(w) for w in warnings], True
-    else:
-        return "", False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -657,6 +606,77 @@ def populate_default_values(entity_data, app_data):
     )
 
 
+##############################################################################################
+##### C. Check user inputs for invalid values (Step 1: Retrieve data from the user)      #####
+##############################################################################################
+
+
+
+@app.callback(
+    Output(id("alert-warning"), "children"),
+    Output(id("alert-warning"), "is_open"),
+    [
+        Input(f"{title}_sampleGroup", "value"),
+        Input(f"{title}_sampleGroupBaseline", "value"),
+        Input(f"{title}_refGroup", "value"),
+        Input(f"{title}_refGroupBaseline", "value"),
+        Input(f"{title}_grouping2", "value")
+    ]
+)
+def check_warnings(sampleGroup, sampleGroupBaseline, refGroup, refGroupBaseline, grouping2):
+    """
+    Check user inputs for potential configuration issues and display warning messages in the UI.
+
+    This Dash callback is triggered whenever the user modifies the sample groups or the grouping format 
+    in the sidebar. It validates that the selected sample and reference groups are not identical, checks 
+    for missing baseline selections, and ensures the grouping2 value follows the expected format.
+
+    Args:
+        sampleGroup (str): Name of the selected sample group.
+        sampleGroupBaseline (str): Optional baseline for the sample group.
+        refGroup (str): Name of the selected reference group.
+        refGroupBaseline (str): Optional baseline for the reference group.
+        grouping2 (str): Additional grouping variable, expected in the format 'NAME [Factor]' or 'NAME [Numeric]'.
+
+    Returns:
+        tuple:
+            - list[html.Div] or str: List of warning messages as Dash `html.Div` components, or an empty string if no warnings.
+            - bool: True if any warnings are present (to open the alert), False otherwise.
+    """
+
+    warnings = []
+    # Check sampleGroup and refGroup; they should be different.
+    if sampleGroup == refGroup and sampleGroup != "please_select":
+        warnings.append("Warning: sampleGroup should be different from refGroup.")
+    # Warning if baseline fields are empty (optional, per your spec).
+    if not sampleGroupBaseline:
+        warnings.append("Warning: Please select a baseline for sampleGroup if you have one.")
+    if not refGroupBaseline:
+        warnings.append("Warning: Please select a baseline for refGroup if you have one.")
+    # Check grouping2 format (only if grouping2 is provided)
+    if grouping2:
+        # This regex requires at least one character, then a space (optional) and then "[Factor]" or "[Numeric]"
+        # Define a regex pattern that matches strings like: "Something [Factor]" or "AnotherName [Numeric]"
+        # Explanation of the pattern:
+        # .+         → Matches one or more of any character except newline (ensures there is some name before the bracket)
+        # \s*        → Matches zero or more whitespace characters (allows space or no space between name and bracket)
+        # \[         → Matches the literal '[' character (escaped because '[' is special in regex)
+        # (Factor|Numeric) → Matches either the word 'Factor' or 'Numeric'
+        # \]$        → Matches the literal ']' at the end of the string (also escaped) and asserts that it's at the end of the line
+        pattern = r".+\s*\[(Factor|Numeric)\]$"
+
+        # re.match tries to match the pattern at the **beginning** of the string.
+        # If the pattern matches, it returns a match object; otherwise, it returns None.
+        if not re.match(pattern, grouping2):
+            warnings.append("Warning: grouping2 must be in the format 'NAME [Factor]' or 'NAME [Numeric]'.")
+    
+    if warnings:
+        # Return the warning messages as a list of <div> components, and set is_open to True.
+        return [html.Div(w) for w in warnings], True
+    else:
+        return "", False
+
+
 ######################################################################################################
 ####################### STEP 2: Get data from B-Fabric! ##############################################
 ###################################################################################################### 
@@ -740,7 +760,61 @@ def submit_edger_job(
     specialOptions, expressionName, mail, Rversion,
     dataset, selected_rows, token_data, entity_data, app_data
 ):
-    
+    """
+    Submit an EdgeR job by building dataset and parameter files, then invoking the Sushi backend.
+
+    This Dash callback is triggered by the "Submit" button. It compiles job configuration settings 
+    and selected dataset information into structured files, constructs a bash command to submit the job 
+    via the Sushi framework, and returns alerts to indicate whether the submission was successful.
+
+    Args:
+        n_clicks (int): Number of times the "Submit" button has been clicked.
+        name (str): Name of the EdgeR job.
+        comment (str): Optional user comment or description.
+        cores (int): Number of CPU cores requested.
+        ram (int): Amount of RAM requested (in GB).
+        scratch (int): Scratch disk space requested (in GB).
+        partition (str): HPC partition/queue to submit the job to.
+        process_mode (str): Mode in which the process should be executed.
+        samples (str): Sample information or selection.
+        refBuild (str): Reference genome build.
+        refFeatureFile (str): Feature annotation file.
+        featureLevel (str): Level of genomic features to analyze (e.g., gene, transcript).
+        testMethod (str): Statistical method used for differential expression testing.
+        deTest (str): DE test configuration or mode.
+        grouping (str): Primary grouping variable for DE analysis.
+        sampleGroup (str): Group of samples being compared.
+        sampleGroupBaseline (str): Baseline group for the sample group.
+        refGroup (str): Reference group for comparison.
+        refGroupBaseline (str): Baseline group for the reference group.
+        onlyCompGroupsHeatmap (str): Whether to include only comparison groups in heatmap.
+        normMethod (str): Normalization method used.
+        grouping2 (str): Secondary grouping variable, must be in format 'NAME [Factor]' or 'NAME [Numeric]'.
+        backgroundExpression (str): Expression background level setting.
+        transcriptTypes (str): Types of transcripts to include.
+        pValuesHighlightThresh (float): Threshold to highlight p-values in results.
+        pvalCut (float): p-value cutoff for significance.
+        runGO (str): Whether to run GO enrichment analysis.
+        pValTreshGo (float): p-value threshold for GO analysis.
+        log2RatioTreshGo (float): Log2 ratio threshold for GO analysis.
+        fdrThresholdForORA (float): FDR threshold for ORA analysis.
+        fdrThresholdForGSEA (float): FDR threshold for GSEA.
+        specialOptions (str): Additional command-line options or flags.
+        expressionName (str): Identifier for the expression matrix or experiment.
+        mail (str): Email address for job status notifications.
+        Rversion (str): Version of R to use for analysis.
+        dataset (list): Dataset information from the frontend.
+        selected_rows (list): Indices of selected rows in the dataset table.
+        token_data (dict): Authentication token data.
+        entity_data (dict): Metadata associated with the user or organization.
+        app_data (dict): Metadata or configuration related to the EdgeR app.
+
+    Returns:
+        tuple:
+            - bool: True if job submission succeeded (to open success alert).
+            - bool: True if job submission failed (to open failure alert).
+    """
+
     print(12)
     try:
         # Create the dataset file from the full API response

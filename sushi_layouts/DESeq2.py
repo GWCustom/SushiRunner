@@ -306,7 +306,7 @@ alerts = html.Div(
     [
         dbc.Alert("Success: Job Submitted!", color="success", id=id("alert-fade-success"), dismissable=True, is_open=False),
         dbc.Alert("Error: Job Submission Failed!", color="danger", id=id("alert-fade-fail"), dismissable=True, is_open=False),
-        dbc.Alert("", color="warning", id=id("alert-warning"), dismissable=True, is_open=False)
+        dbc.Alert("", color="danger", id=id("alert-warning"), dismissable=True, is_open=False)
     ],
     style={"margin": "20px"}
 )

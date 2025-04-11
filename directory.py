@@ -37,7 +37,7 @@ DIRECTORY = {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
-        '222': {
+        '377': {
             'layout': EdgeR.layout,
             'sidebar': EdgeR.sidebar,
             'alerts': EdgeR.alerts
@@ -72,7 +72,7 @@ DIRECTORY = {
             'sidebar': CellRanger.sidebar,
             'alerts': CellRanger.alerts
         },
-        '377': {
+        '111': {
             'layout': Fastqc10xApp.layout,
             'sidebar': Fastqc10xApp.sidebar,
             'alerts': Fastqc10xApp.alerts
