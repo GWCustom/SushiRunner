@@ -37,47 +37,47 @@ DIRECTORY = {
             'layout': FastqScreenApp.layout,
             'sidebar': FastqScreenApp.sidebar
         },
-        '222': {
+        '400': {
             'layout': EdgeR.layout,
             'sidebar': EdgeR.sidebar,
             'alerts': EdgeR.alerts
         },
-        '333': {
+        '525': {
             'layout': DESeq2.layout,
             'sidebar': DESeq2.sidebar,
             'alerts': DESeq2.alerts
         },
-        '444': {
+        '445': {
             'layout': STAR.layout,
             'sidebar': STAR.sidebar,
             'alerts': STAR.alerts
         },
-        '555': {
+        '423': {
             'layout': Bowtie2.layout,
             'sidebar': Bowtie2.sidebar,
             'alerts': Bowtie2.alerts
         },
-        '666': {
+        '406': {
             'layout': CountQCApp.layout,
             'sidebar': CountQCApp.sidebar,
             'alerts': CountQCApp.alerts,
         },
-        '777': {
+        '452': {
             'layout': FeatureCounts.layout,
             'sidebar': FeatureCounts.sidebar,
             'alerts': FeatureCounts.alerts
         },
-        '888': {
+        '394': {
             'layout': CellRanger.layout,
             'sidebar': CellRanger.sidebar,
             'alerts': CellRanger.alerts
         },
-        '999': {
+        '442': {
             'layout': Fastqc10xApp.layout,
             'sidebar': Fastqc10xApp.sidebar,
             'alerts': Fastqc10xApp.alerts
         },
-        '111': {
+        '422': {
             'layout': FastqScreen10xApp.layout,
             'sidebar': FastqScreen10xApp.sidebar,
             'alerts': FastqScreen10xApp.alerts
