@@ -98,10 +98,6 @@ sidebar = dbc.Container(
             )
         ]),
 
-        html.Div([
-            dbc.Label("Samples", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_samples', value='', type='text', style=component_styles)
-        ]),
 
         html.Div([
             dbc.Label("refBuild", style={"font-size": "0.85rem"}),

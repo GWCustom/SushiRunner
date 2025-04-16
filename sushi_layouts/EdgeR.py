@@ -118,11 +118,6 @@ sidebar = dbc.Container(
             )
         ]),
 
-        # Samples (no tooltip)
-        html.Div([
-            dbc.Label("Samples", style={"font-size": "0.85rem"}),
-            dbc.Input(id=f'{title}_samples', value='', type='text', style=component_styles)
-        ]),
 
         # refBuild (no tooltip)
         html.Div([
@@ -163,7 +158,8 @@ sidebar = dbc.Container(
             dbc.Label("deTest", style={"font-size": "0.85rem"}),
             dbc.Select(
                 id=f'{title}_deTest',
-                options=[{"label": "QL", "value": "QL"}],
+                options=[{"label": "QL", "value": "QL"},
+                         {"label": "LR", "value": "LR"}],
                 value="QL",
                 style=component_styles
             ),
