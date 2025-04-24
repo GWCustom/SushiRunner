@@ -3,11 +3,13 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from generic.callbacks import app
 import dash_daq as daq
+import bfabric_web_apps
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 from sushi_utils.component_utils import submitbutton_id
@@ -279,14 +281,16 @@ def update_dataset(entity_data, dataset):
         State(id("specialOptions"), "value"),
         State(id("cmdOptions"), "value"),
         State(id("dataset"), "data"),
+        State("charge_run", "on"),
         State("datatable", "selected_rows"),
         State("token_data", "data"),
         State("entity", "data"),
-        State("app_data", "data")
+        State("app_data", "data"),
+        State('url', 'search')
     ],
     prevent_initial_call=True
 )
-def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, showNativeReports, specialOptions, cmdOptions, dataset, selected_rows, token_data, entity_data, app_data):
+def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, showNativeReports, specialOptions, cmdOptions, dataset, charge_run, selected_rows, token_data, entity_data, app_data, url):
     """
     Construct the bash command which calls the sushi app from the backend.
 
@@ -358,6 +362,20 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         --next_dataset_name {name}
     """
 
-    print(bash_command)
+    print(charge_run)
+    print(bfabric_web_apps.SERVICE_ID)
 
-    return True, False
+    try:
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+        return True, False
+    except Exception as e:
+        print(f"Job submission failed: {e}")
+        return False, True
