@@ -149,9 +149,7 @@ def callback(data, sidebar):
         table = DataTable(
             id='datatable',
             data=df.to_dict('records'),        
-            columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
+            columns=[{"name": i, "id": i} for i in df.columns],
             page_action="native",
             page_current=0,
             page_size=15,
@@ -345,13 +343,16 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         os.makedirs(os.path.dirname(param_path))
     parameters.to_csv(param_path, sep="\t", index=False, header=False)
 
-
     ### Complete the remaining variables
     app_id = app_data.get("id", "")
     # project_id = entity_data.get("full_api_response", {}).get("container", {}).get("id", "")
     project_id = "2220"
     dataset_name = entity_data.get("name", "")
     mango_run_name = "None"
+    
+    # Update charge_run based on its value
+    if charge_run and project_id:
+        charge_run = [project_id]
 
     ### Step III. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
@@ -361,10 +362,6 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
         --next_dataset_name {name}
     """
-
-    print(charge_run)
-    print(bfabric_web_apps.SERVICE_ID)
-
     try:
         run_main_job(
             files_as_byte_strings={},

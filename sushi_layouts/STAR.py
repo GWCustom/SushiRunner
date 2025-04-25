@@ -6,8 +6,10 @@ import dash_daq as daq
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
+import bfabric_web_apps
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
@@ -380,8 +382,6 @@ def callback(data, sidebar):
             id='datatable',
             data=df.to_dict('records'),        
             columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
             page_action="native",
             page_current=0,
             page_size=15,
@@ -588,7 +588,6 @@ def update_dataset(entity_data, dataset):
         State(id('scratch'), 'value'),
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
-        State(id('samples'), 'value'),
         State(id('refBuild'), 'value'),
         State(id('paired'), 'value'),
         State(id('strandMode'), 'value'),
@@ -624,18 +623,20 @@ def update_dataset(entity_data, dataset):
         State('token_data', 'data'),
         State('entity', 'data'),
         State('app_data', 'data'),
+        State('url', 'search'),
+        State("charge_run", "on"),
     ],
     prevent_initial_call=True
 )
 def submit_star_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode,
     refBuild, paired, strandMode, refFeatureFile, secondRef, cmdOptions, getJunctions, twopassMode,
     trimAdapter, trim_front1, trim_tail1, cut_front, cut_front_window_size, cut_front_mean_quality,
     cut_tail, cut_tail_window_size, cut_tail_mean_quality,
     cut_right, cut_right_window_size, cut_right_mean_quality,
     average_qual, max_len1, max_len2, poly_x_min_len, length_required,
     cmdOptionsFastp, barcodePattern, markDuplicates, specialOptions, mail,
-    dataset, selected_rows, token_data, entity_data, app_data
+    dataset, selected_rows, token_data, entity_data, app_data, url, charge_run
 ):
 
     """
@@ -654,7 +655,6 @@ def submit_star_job(
         scratch (int): Requested scratch disk space (in GB).
         partition (str): HPC partition or queue for job submission.
         process_mode (str): Execution mode (e.g., test or production).
-        samples (str): Sample selection or IDs.
         refBuild (str): Reference genome build.
         paired (str or bool): Whether sequencing data is paired-end.
         strandMode (str): Strand-specific mode for alignment.
@@ -712,7 +712,6 @@ def submit_star_job(
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
-            'samples': samples,
             'refBuild': refBuild,
             'paired': paired,
             'strandMode': strandMode,
@@ -752,6 +751,11 @@ def submit_star_job(
 
         app_id = app_data.get("id", "")
         project_id = "2220"
+
+        # Update charge_run based on its value
+        if charge_run and project_id:
+            charge_run = [project_id]
+
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
@@ -760,6 +764,17 @@ def submit_star_job(
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
         print("[SUSHI BASH COMMAND]:", bash_command)
+
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+        
         return True, False
 
     except Exception as e:

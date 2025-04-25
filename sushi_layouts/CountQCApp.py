@@ -6,8 +6,10 @@ import dash_daq as daq
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
+import bfabric_web_apps
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
@@ -246,8 +248,6 @@ def callback(data, sidebar):
             id='datatable',
             data=df.to_dict('records'),        
             columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
             page_action="native",
             page_current=0,
             page_size=15,
@@ -363,7 +363,6 @@ def update_dataset(entity_data, dataset):
         State(id('scratch'), 'value'),
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
-        State(id('samples'), 'value'),
         State(id('label_name'), 'value'),
         State(id('refBuild'), 'value'),
         State(id('refFeatureFile'), 'value'),
@@ -382,14 +381,16 @@ def update_dataset(entity_data, dataset):
         State('token_data', 'data'),
         State('entity', 'data'),
         State('app_data', 'data'),
+        State('url', 'search'),
+        State("charge_run", "on"),
     ],
     prevent_initial_call=True
 )
 def submit_countqc_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples, label_name,
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, label_name,
     refBuild, refFeatureFile, featureLevel, normMethod, runGO, backgroundExpression, topGeneSize,
     selectByFtest, transcriptTypes, specialOptions, expressionName, mail,
-    dataset, selected_rows, token_data, entity_data, app_data
+    dataset, selected_rows, token_data, entity_data, app_data, url, charge_run
 ):
     """
     Submit a CountQC job by creating dataset and parameter files, then triggering the Sushi backend.
@@ -407,7 +408,6 @@ def submit_countqc_job(
         scratch (int): Scratch disk space requested (in GB).
         partition (str): HPC partition or queue to which the job will be submitted.
         process_mode (str): Processing mode to use for the job (e.g., normal or debug).
-        samples (str): Sample IDs or configuration.
         label_name (str): Label name for the output.
         refBuild (str): Reference genome build.
         refFeatureFile (str): Annotation file with gene or feature information.
@@ -447,7 +447,6 @@ def submit_countqc_job(
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
-            'samples': samples,
             'label_name': label_name,
             'refBuild': refBuild,
             'refFeatureFile': refFeatureFile,
@@ -472,12 +471,28 @@ def submit_countqc_job(
         project_id = "2220"
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
+
+        # Update charge_run based on its value
+        if charge_run and project_id:
+            charge_run = [project_id]
+
         bash_command = f"""
             bundle exec sushi_fabric --class CountQC --dataset {dataset_path} --parameterset {param_path} --run \\
             --input_dataset_application {app_id} --project {project_id} --dataset_name {dataset_name} \\
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
         print("[SUSHI BASH COMMAND]:", bash_command)
+
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+        
         return True, False
 
     except Exception as e:

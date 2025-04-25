@@ -7,8 +7,10 @@ from bfabric_web_apps.utils.components import charge_switch
 from bfabric_web_apps import bfabric_interface
 import pandas as pd 
 from dash.dash_table import DataTable
+import bfabric_web_apps
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
@@ -172,7 +174,7 @@ def update_dropdown(possible_datasets, entity_data):
         Make the name fit inside the dropdown
         """
         if len(name) > 25:
-            return name[:10] + "..." + name[-10:]
+            return name[:5] + "..." + name[-5:]
         else:
             return name
 
@@ -213,8 +215,6 @@ def callback(data, sidebar):
             id='datatable',
             data=df.to_dict('records'),        
             columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
             page_action="native",
             page_current=0,
             page_size=15,
@@ -341,15 +341,17 @@ def update_dataset(entity_data, dataset):
         State(id("mail"), "value"),
         State(id("paired"), "on"),
         State(id("dataset"), "data"),
+        State(id("dropdown"), "value"),
         State("datatable", "selected_rows"),
         State("token_data", "data"),
         State("entity", "data"),
         State("app_data", "data"),
-        State("dropdown", "value")
+        State('url', 'search'),
+        State("charge_run", "on"),
     ],
     prevent_initial_call=True
 )
-def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, showNativeReports, specialOptions, cmdOptions, dataset, selected_rows, token_data, entity_data, app_data):
+def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, dataset, dropdown, selected_rows, token_data, entity_data, app_data, url, charge_run):
     """
     Construct the bash command which calls the sushi app from the backend.
 
@@ -368,9 +370,6 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         process_mode (str): Mode in which the job should be processed.
         mail (str): Email address for job notifications.
         paired (bool): Whether the input data is paired-end (True) or single-end (False).
-        showNativeReports (bool): Whether to include native reports in output.
-        specialOptions (str): Any special options to be passed to the MergeRunData app.
-        cmdOptions (str): Additional command-line options for the MergeRunData app.
         dataset (list): List of dataset records displayed in the frontend.
         selected_rows (list): Indices of selected rows from the dataset table.
         token_data (dict): Authentication token data for secure backend communication.
@@ -393,8 +392,8 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
     dataset.to_csv(dataset_path, sep="\t", index=False)
 
     ### Step II. Construct parameters.tsv to send to the backend 
-    param_names = ['cores', 'ram', 'scratch', 'node', 'process_mode', 'partition', 'paired', 'perLibrary', 'name', 'cmdOptions', 'mail']
-    param_values = [cores, ram, scratch, '', process_mode, partition, str(paired).lower(), 'true', name, cmdOptions, mail]
+    param_names = ['cores', 'ram', 'scratch', 'node', 'process_mode', 'partition', 'paired', 'perLibrary', 'name', 'mail']
+    param_values = [cores, ram, scratch, '', process_mode, partition, str(paired).lower(), 'true', name, mail]
     parameters = pd.DataFrame({
         "col1": param_names, 
         "col2": param_values
@@ -409,6 +408,11 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
     app_id = app_data.get("id", "")
     # project_id = entity_data.get("full_api_response", {}).get("container", {}).get("id", "")
     project_id = "2220"
+
+    # Update charge_run based on its value
+    if charge_run and project_id:
+        charge_run = [project_id]
+
     dataset_name = entity_data.get("name", "")
     mango_run_name = "None"
 
@@ -420,7 +424,16 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
         --next_dataset_name {name}
     """
-
     print(bash_command)
+
+    run_main_job(
+        files_as_byte_strings={},
+        bash_commands=[bash_command],
+        resource_paths={},
+        attachment_paths={},
+        token=url,
+        service_id=bfabric_web_apps.SERVICE_ID,
+        charge=charge_run
+    )
 
     return True, False

@@ -26,7 +26,8 @@ DIRECTORY = {
     'test': {
         '373': {
             'layout': MergeRunDataApp.layout,
-            'sidebar': MergeRunDataApp.sidebar
+            'sidebar': MergeRunDataApp.sidebar,
+            'alerts': MergeRunDataApp.alerts
         },
         '434': {
             'layout': FastqcApp.layout,
@@ -35,7 +36,8 @@ DIRECTORY = {
         },
         '377': {
             'layout': FastqScreenApp.layout,
-            'sidebar': FastqScreenApp.sidebar
+            'sidebar': FastqScreenApp.sidebar,
+            'alerts': FastqScreenApp.alerts
         },
         '400': {
             'layout': EdgeR.layout,

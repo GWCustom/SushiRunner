@@ -6,8 +6,10 @@ import dash_daq as daq
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
+import bfabric_web_apps
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
@@ -519,9 +521,6 @@ def callback(data, sidebar):
         table = DataTable(
             id='datatable',
             data=df.to_dict('records'),        
-            columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
             page_action="native",
             page_current=0,
             page_size=15,
@@ -712,7 +711,6 @@ def update_dataset(entity_data, dataset):
         State(id('scratch'), 'value'),
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
-        State(id('samples'), 'value'),
         State(id('refBuild'), 'value'),
         State(id('refFeatureFile'), 'value'),
         State(id('featureLevel'), 'value'),
@@ -743,18 +741,20 @@ def update_dataset(entity_data, dataset):
         State('datatable', 'selected_rows'),
         State('token_data', 'data'),
         State('entity', 'data'),
-        State('app_data', 'data')
+        State('app_data', 'data'),
+        State('url', 'search'),
+        State("charge_run", "on"),
     ],
     prevent_initial_call=True
 )
 def submit_edger_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode,
     refBuild, refFeatureFile, featureLevel, testMethod, deTest, grouping, sampleGroup,
     sampleGroupBaseline, refGroup, refGroupBaseline, onlyCompGroupsHeatmap, normMethod,
     grouping2, backgroundExpression, transcriptTypes, pValuesHighlightThresh, pvalCut,
     runGO, pValTreshGo, log2RatioTreshGo, fdrThresholdForORA, fdrThresholdForGSEA,
     specialOptions, expressionName, mail, Rversion,
-    dataset, selected_rows, token_data, entity_data, app_data
+    dataset, selected_rows, token_data, entity_data, app_data, url, charge_run
 ):
     """
     Submit an EdgeR job by building dataset and parameter files, then invoking the Sushi backend.
@@ -772,7 +772,6 @@ def submit_edger_job(
         scratch (int): Scratch disk space requested (in GB).
         partition (str): HPC partition/queue to submit the job to.
         process_mode (str): Mode in which the process should be executed.
-        samples (str): Sample information or selection.
         refBuild (str): Reference genome build.
         refFeatureFile (str): Feature annotation file.
         featureLevel (str): Level of genomic features to analyze (e.g., gene, transcript).
@@ -826,7 +825,6 @@ def submit_edger_job(
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
-            'samples': samples,
             'refBuild': refBuild,
             'refFeatureFile': refFeatureFile,
             'featureLevel': featureLevel,
@@ -866,6 +864,11 @@ def submit_edger_job(
         # Build the bash command for job submission
         app_id = app_data.get("id", "")
         project_id = "2220"
+
+        # Update charge_run based on its value
+        if charge_run and project_id:
+            charge_run = [project_id]
+
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
@@ -874,6 +877,17 @@ def submit_edger_job(
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
         print("[SUSHI BASH COMMAND]:", bash_command)
+
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+
         return True, False
 
     except Exception as e:

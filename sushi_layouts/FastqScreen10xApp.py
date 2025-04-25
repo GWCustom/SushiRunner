@@ -6,8 +6,10 @@ import dash_daq as daq
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
+import bfabric_web_apps
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 
@@ -175,8 +177,6 @@ def callback(data, sidebar):
             id='datatable',
             data=df.to_dict('records'),        
             columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
             page_action="native",
             page_current=0,
             page_size=15,
@@ -323,7 +323,6 @@ def update_dataset(entity_data, dataset):
         State(id('scratch'), 'value'),
         State(id('partition'), 'value'),
         State(id('process_mode'), 'value'),
-        State(id('samples'), 'value'),
         State(id('paired'), 'value'),
         State(id('label_name'), 'value'),
         State(id('cmdOptions'), 'value'),
@@ -333,13 +332,15 @@ def update_dataset(entity_data, dataset):
         State('token_data', 'data'),
         State('entity', 'data'),
         State('app_data', 'data'),
+        State('url', 'search'),
+        State("charge_run", "on"),
     ],
     prevent_initial_call=True
 )
 def submit_FastqScreen10x_job(
-    n_clicks, name, comment, cores, ram, scratch, partition, process_mode, samples,
+    n_clicks, name, comment, cores, ram, scratch, partition, process_mode,
     paired, label_name, cmdOptions, mail,
-    dataset, selected_rows, token_data, entity_data, app_data
+    dataset, selected_rows, token_data, entity_data, app_data, url, charge_run
 ):
     """
     Submit a FastqScreen10x job by generating dataset and parameter files and invoking the Sushi backend.
@@ -358,7 +359,6 @@ def submit_FastqScreen10x_job(
         scratch (int): Scratch disk space requested in GB.
         partition (str): HPC partition or queue for job execution.
         process_mode (str): Execution mode (e.g., normal, test).
-        samples (str): Input sample identifiers.
         paired (str or bool): Whether the input reads are paired-end.
         label_name (str): Label or identifier for the FastqScreen10x run.
         cmdOptions (str): Additional command-line flags for FastqScreen10x.
@@ -389,7 +389,6 @@ def submit_FastqScreen10x_job(
             'scratch': scratch,
             'partition': partition,
             'processMode': process_mode,
-            'samples': samples,
             'paired': paired,
             'label_name': label_name,
             'cmdOptions': cmdOptions,
@@ -403,6 +402,11 @@ def submit_FastqScreen10x_job(
 
         app_id = app_data.get("id", "")
         project_id = "2220"
+
+        # Update charge_run based on its value
+        if charge_run and project_id:
+            charge_run = [project_id]
+        
         dataset_name = entity_data.get("name", "")
         mango_run_name = "None"
         bash_command = f"""
@@ -411,6 +415,17 @@ def submit_FastqScreen10x_job(
             --mango_run_name {mango_run_name} --next_dataset_name {name}
         """
         print("[SUSHI BASH COMMAND]:", bash_command)
+
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+
         return True, False
 
     except Exception as e:
