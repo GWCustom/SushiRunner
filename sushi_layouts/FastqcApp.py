@@ -3,11 +3,13 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from generic.callbacks import app
 import dash_daq as daq
+import bfabric_web_apps
 from bfabric_web_apps.utils.components import charge_switch
 import pandas as pd 
 from dash.dash_table import DataTable
 from bfabric_web_apps import (
-    SCRATCH_PATH
+    SCRATCH_PATH,
+    run_main_job
 )
 from sushi_utils.dataset_utils import dataset_to_dictionary as dtd
 from sushi_utils.component_utils import submitbutton_id
@@ -147,9 +149,7 @@ def callback(data, sidebar):
         table = DataTable(
             id='datatable',
             data=df.to_dict('records'),        
-            columns=[{"name": i, "id": i} for i in df.columns], 
-            selected_rows=[i for i in range(len(df))],
-            row_selectable='multi',
+            columns=[{"name": i, "id": i} for i in df.columns],
             page_action="native",
             page_current=0,
             page_size=15,
@@ -279,14 +279,16 @@ def update_dataset(entity_data, dataset):
         State(id("specialOptions"), "value"),
         State(id("cmdOptions"), "value"),
         State(id("dataset"), "data"),
+        State("charge_run", "on"),
         State("datatable", "selected_rows"),
         State("token_data", "data"),
         State("entity", "data"),
-        State("app_data", "data")
+        State("app_data", "data"),
+        State('url', 'search')
     ],
     prevent_initial_call=True
 )
-def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, showNativeReports, specialOptions, cmdOptions, dataset, selected_rows, token_data, entity_data, app_data):
+def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition, process_mode, mail, paired, showNativeReports, specialOptions, cmdOptions, dataset, charge_run, selected_rows, token_data, entity_data, app_data, url):
     """
     Construct the bash command which calls the sushi app from the backend.
 
@@ -341,13 +343,16 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         os.makedirs(os.path.dirname(param_path))
     parameters.to_csv(param_path, sep="\t", index=False, header=False)
 
-
     ### Complete the remaining variables
     app_id = app_data.get("id", "")
     # project_id = entity_data.get("full_api_response", {}).get("container", {}).get("id", "")
     project_id = "2220"
     dataset_name = entity_data.get("name", "")
     mango_run_name = "None"
+    
+    # Update charge_run based on its value
+    if charge_run and project_id:
+        charge_run = [project_id]
 
     ### Step III. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
@@ -357,7 +362,17 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
         --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
         --next_dataset_name {name}
     """
-
-    print(bash_command)
-
-    return True, False
+    try:
+        run_main_job(
+            files_as_byte_strings={},
+            bash_commands=[bash_command],
+            resource_paths={},
+            attachment_paths={},
+            token=url,
+            service_id=bfabric_web_apps.SERVICE_ID,
+            charge=charge_run
+        )
+        return True, False
+    except Exception as e:
+        print(f"Job submission failed: {e}")
+        return False, True

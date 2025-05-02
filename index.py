@@ -136,14 +136,33 @@ def update_user_display(token_data, entity_data, app_data):
             docs = html.P(app_data.get('description', ""))
 
             # Get the alerts:
-            alerts = layout_data.get('alerts', html.Div())
+            # Get any app-specific alerts
+            alerts = layout_data.get('alerts', [])
 
-        return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs, alerts
+            # Create the general warning alert
+            warning_alert = dbc.Alert(
+                "Please note: The Sushi applications are proof of concept tools and are not intended for production use. They have not yet undergone testing by the BioIT team.",
+                color="warning",
+                dismissable=True,
+                is_open=True,
+                className="mb-3",
+                style={"margin": "20px"}
+            )
+
+            # Combine both alerts (ensure it's always a list)
+            combined_alerts = [warning_alert]
+            if isinstance(alerts, list):
+                combined_alerts += alerts
+            else:
+                combined_alerts.append(alerts)
+
+
+        return layout_data.get('layout', {}), layout_data.get('sidebar', None), docs, combined_alerts
     else:
         return html.P("Please log in."), [], [], []
 
+bfabric_web_apps.DEBUG = True
 
 # Here we run the app on the specified host and port.
 if __name__ == "__main__":
     app.run(debug=bfabric_web_apps.DEBUG, port=bfabric_web_apps.PORT, host=bfabric_web_apps.HOST)
-
