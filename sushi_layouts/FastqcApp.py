@@ -341,32 +341,26 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
             - is_open_fail (bool): True if job submission failed, to show the failure alert.
     """
 
-    ### Step I. Construct the dataset.tsv file to send to the backend
+    ### A. Construct the dataset.tsv file to send to the backend
     dataset = pd.DataFrame(dtd(entity_data.get("full_api_response", {})))
     dataset_path = f"{SCRATCH_PATH}/{name}/dataset.tsv"
+    param_path = f"{SCRATCH_PATH}/{name}/parameters.tsv"
 
-    if not os.path.exists(os.path.dirname(dataset_path)):
-        os.makedirs(os.path.dirname(dataset_path))
+    for filepath in [dataset_path, param_path]:
+        if not os.path.exists(os.path.dirname(filepath)):
+            os.makedirs(os.path.dirname(filepath))
     
-    dataset.to_csv(dataset_path, sep="\t", index=False)
-
-    ### Step II. Construct parameters.tsv to send to the backend 
-
+    ### B. Construct parameters.tsv to send to the backend and assign necessary variables for bash command
     parameters = pd.DataFrame({
         "col1": ['cores', 'ram', 'scratch', 'node', 'process_mode', 'partition', 'paired', 'perLibrary', 'name', 'cmdOptions', 'mail'], 
         "col2": [cores, ram, scratch, '', process_mode, partition, str(paired).lower(), 'true', name, cmdOptions, mail]
     })
-
-    param_path = f"{SCRATCH_PATH}/{name}/parameters.tsv"
-    if not os.path.exists(os.path.dirname(param_path)):
-        os.makedirs(os.path.dirname(param_path))
     
     parameters.to_csv(param_path, sep="\t", index=False, header=False)
+    dataset.to_csv(dataset_path, sep="\t", index=False)
 
     ### Complete the remaining variables
-    app_id = app_data.get("id", "")
-
-    container_id = entity_data.get("full_api_response", {}).get("container",{}).get("id", None)
+    container_id, app_id = entity_data.get("full_api_response", {}).get("container",{}).get("id", None), app_data.get("id", "")
 
     if not container_id:
         project_id = "2220"
@@ -375,15 +369,14 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
     else: 
         project_id = container_id
 
-    dataset_name = entity_data.get("name", "")
-    mango_run_name = "None"
+    dataset_name, mango_run_name = entity_data.get("name", ""), "None"
     
     # Update charge_run based on its value
-    if charge_run and project_id:
-        charge_run = [project_id]
+    projects_to_charge = [project_id] if charge_run and project_id else []
 
-    ### Step III. Construct the bash command to send to the backend (invoke sushi_fabric)
+    ### C. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
+        cd /srv/sushi/production/master && \
         bundle exec sushi_fabric --class FastqcApp --dataset \
         {dataset_path} --parameterset {param_path} --run  \
         --input_dataset_application {app_id} --project {project_id} \
@@ -398,10 +391,9 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
             attachment_paths={},
             token=url,
             service_id=bfabric_web_apps.SERVICE_ID,
-            charge=charge_run
+            charge=projects_to_charge
         )
         return True, False
-        # print(bash_command)
     
     except Exception as e:
         print(f"Job submission failed: {e}")
