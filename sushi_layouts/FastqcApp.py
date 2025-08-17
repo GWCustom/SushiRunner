@@ -356,12 +356,14 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
 
     ### Step III. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
-        bundle exec sushi_fabric --class FastqcApp --dataset \
-        {dataset_path} --parameterset {param_path} --run  \
-        --input_dataset_application {app_id} --project {project_id} \
-        --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
-        --next_dataset_name {name}
+    ssh -i ~/.ssh/trx trxcopy@fgcz-h-036 \
+    "bash -lc 'cd /srv/sushi/production/master && bundle exec sushi_fabric --class FastqcApp --dataset \
+    {dataset_path} --parameterset {param_path} --run \
+    --input_dataset_application {app_id} --project {project_id} \
+    --dataset_name {dataset_name} --mango_run_name {mango_run_name} \
+    --next_dataset_name {name}'"
     """
+
     try:
         run_main_job(
             files_as_byte_strings={},
