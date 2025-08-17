@@ -376,7 +376,7 @@ def submit_suhshi_job(submission, name, comment, ram, cores, scratch, partition,
 
     ### C. Construct the bash command to send to the backend (invoke sushi_fabric)
     bash_command = f"""
-    ssh -i ~/.ssh/trx trxcopy@fgcz-h-036 \
+    ssh trxcopy@fgcz-h-036 \
     "bash -lc 'cd /srv/sushi/production/master && bundle exec sushi_fabric --class FastqcApp --dataset \
     {dataset_path} --parameterset {param_path} --run \
     --input_dataset_application {app_id} --project {project_id} \
